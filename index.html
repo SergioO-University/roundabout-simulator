@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simulador de glorietas · Santa Marta</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <div>
+        <h1>Simulador de cuellos de botella en glorietas</h1>
+        <p class="subtitle">Santa Marta · comparación de formas de operar un punto con las mismas llegadas</p>
+      </div>
+      <div class="badges">
+        <span id="badge-test-data" class="badge warning" hidden>Datos de prueba</span>
+        <span id="data-source" class="badge"></span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="scene">
+        <canvas id="canvas" aria-label="Dibujo de la glorieta y los vehículos"></canvas>
+        <div class="legend">
+          <span><i style="background: var(--motorcycle)"></i>Moto</span>
+          <span><i style="background: var(--car)"></i>Carro</span>
+          <span><i style="background: var(--bus)"></i>Buseta</span>
+          <span><i class="outline"></i>Atravesado</span>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="card">
+          <h2>Escenario</h2>
+          <label>Punto
+            <select id="sel-site"></select>
+          </label>
+          <div class="row2">
+            <label>Perfil de demanda
+              <select id="sel-profile">
+                <option value="peak">Hora pico</option>
+                <option value="offpeak">Hora valle</option>
+                <option value="test">Caso de prueba (3 vehículos)</option>
+              </select>
+            </label>
+            <label>Semilla
+              <input id="inp-seed" type="number" min="1" step="1" />
+            </label>
+          </div>
+          <p id="count-time" class="note"></p>
+        </div>
+
+        <div class="card">
+          <h2>Modo de operación</h2>
+          <div class="segmented" id="modes">
+            <button data-mode="current">Actual</button>
+            <button data-mode="signal">Semáforo</button>
+            <button data-mode="officer">Agente</button>
+          </div>
+          <p id="mode-description" class="note"></p>
+          <div id="signal-controls" class="controls" hidden></div>
+          <div id="officer-controls" class="controls" hidden></div>
+          <p id="phase-warnings" class="warning-box" hidden></p>
+        </div>
+
+        <div class="card">
+          <h2>Reproducción</h2>
+          <div class="button-row">
+            <button id="btn-play" class="primary">▶ Iniciar</button>
+            <button id="btn-reset">↺ Reiniciar</button>
+          </div>
+          <div class="segmented" id="speeds">
+            <button data-speed="1">×1</button>
+            <button data-speed="5">×5</button>
+            <button data-speed="10">×10</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Métricas en tiempo real</h2>
+          <div class="kpis">
+            <div class="kpi"><span class="value" id="kpi-discharge">0</span><span class="caption">veh/min<br />evacuación (último min)</span></div>
+            <div class="kpi"><span class="value" id="kpi-wait">0</span><span class="caption">s<br />espera promedio</span></div>
+            <div class="kpi"><span class="value" id="kpi-queue">0</span><span class="caption">veh<br />cola máxima</span></div>
+          </div>
+          <table class="table" id="approach-table">
+            <thead>
+              <tr><th>Acceso</th><th>Cola</th><th>Máx</th><th>Espera</th><th title="Llegadas en los primeros 15 min simulados frente a lo contado en campo">Llegadas 15 min</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="note" id="extra-metrics"></p>
+        </div>
+      </aside>
+    </main>
+
+    <section class="comparator">
+      <div class="comparator-header">
+        <div>
+          <h2>Comparador de escenarios</h2>
+          <p class="note">Corre dos modos con la misma semilla y el mismo perfil durante 15 minutos simulados, sin dibujar.</p>
+        </div>
+        <div class="comparator-controls">
+          <label>Modo A <select id="cmp-a"></select></label>
+          <label>Modo B <select id="cmp-b"></select></label>
+          <button id="btn-compare" class="primary">Comparar</button>
+        </div>
+      </div>
+      <div id="cmp-result"></div>
+      <div class="button-row export">
+        <button id="exp-cmp-csv" disabled>Exportar comparación (CSV)</button>
+        <button id="exp-cmp-json" disabled>Exportar comparación (JSON)</button>
+        <button id="exp-veh-csv">Exportar vehículos de la corrida actual (CSV)</button>
+      </div>
+    </section>
+
+    <script src="data/embedded-data.js"></script>
+    <script src="js/geometry.js"></script>
+    <script src="js/arrivals.js"></script>
+    <script src="js/control.js"></script>
+    <script src="js/vehicles.js"></script>
+    <script src="js/metrics.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/renderer.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

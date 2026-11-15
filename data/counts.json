@@ -1,0 +1,257 @@
+{
+  "note": "TEST DATA (made up). Replace with the real 15-minute counts per approach and vehicle type. turning = share of vehicles from each approach that leave through each exit (estimate it from the video).",
+  "sites": {
+    "la_lucha": {
+      "site": "Intercambiador de La Lucha",
+      "is_test_data": true,
+      "coordinates": null,
+      "profiles": {
+        "peak": {
+          "time": "17:15-17:30",
+          "approaches": {
+            "north": {
+              "motorcycle": 134,
+              "car": 85,
+              "bus": 13
+            },
+            "east": {
+              "motorcycle": 73,
+              "car": 42,
+              "bus": 6
+            },
+            "south": {
+              "motorcycle": 123,
+              "car": 76,
+              "bus": 10
+            },
+            "west": {
+              "motorcycle": 62,
+              "car": 35,
+              "bus": 4
+            }
+          }
+        },
+        "offpeak": {
+          "time": "10:00-10:15",
+          "approaches": {
+            "north": {
+              "motorcycle": 41,
+              "car": 30,
+              "bus": 5
+            },
+            "east": {
+              "motorcycle": 22,
+              "car": 14,
+              "bus": 2
+            },
+            "south": {
+              "motorcycle": 37,
+              "car": 26,
+              "bus": 4
+            },
+            "west": {
+              "motorcycle": 19,
+              "car": 11,
+              "bus": 2
+            }
+          }
+        }
+      },
+      "turning": {
+        "north": {
+          "east": 0.2,
+          "south": 0.6,
+          "west": 0.17,
+          "north": 0.03
+        },
+        "east": {
+          "south": 0.3,
+          "west": 0.4,
+          "north": 0.28,
+          "east": 0.02
+        },
+        "south": {
+          "west": 0.2,
+          "north": 0.6,
+          "east": 0.17,
+          "south": 0.03
+        },
+        "west": {
+          "north": 0.3,
+          "east": 0.4,
+          "south": 0.28,
+          "west": 0.02
+        }
+      },
+      "observed_blockages": []
+    },
+    "mamatoco": {
+      "site": "Glorieta de Mamatoco",
+      "is_test_data": true,
+      "coordinates": null,
+      "profiles": {
+        "peak": {
+          "time": "17:15-17:30",
+          "approaches": {
+            "north": {
+              "motorcycle": 60,
+              "car": 32,
+              "bus": 6
+            },
+            "east": {
+              "motorcycle": 85,
+              "car": 50,
+              "bus": 8
+            },
+            "south": {
+              "motorcycle": 55,
+              "car": 28,
+              "bus": 5
+            },
+            "west": {
+              "motorcycle": 90,
+              "car": 52,
+              "bus": 9
+            }
+          }
+        },
+        "offpeak": {
+          "time": "10:00-10:15",
+          "approaches": {
+            "north": {
+              "motorcycle": 25,
+              "car": 14,
+              "bus": 3
+            },
+            "east": {
+              "motorcycle": 38,
+              "car": 22,
+              "bus": 4
+            },
+            "south": {
+              "motorcycle": 22,
+              "car": 12,
+              "bus": 2
+            },
+            "west": {
+              "motorcycle": 40,
+              "car": 24,
+              "bus": 4
+            }
+          }
+        }
+      },
+      "turning": {
+        "north": {
+          "east": 0.3,
+          "south": 0.35,
+          "west": 0.33,
+          "north": 0.02
+        },
+        "east": {
+          "south": 0.2,
+          "west": 0.6,
+          "north": 0.18,
+          "east": 0.02
+        },
+        "south": {
+          "west": 0.3,
+          "north": 0.35,
+          "east": 0.33,
+          "south": 0.02
+        },
+        "west": {
+          "north": 0.2,
+          "east": 0.6,
+          "south": 0.18,
+          "west": 0.02
+        }
+      },
+      "observed_blockages": []
+    },
+    "la_piragua": {
+      "site": "Glorieta La Piragua",
+      "is_test_data": true,
+      "coordinates": null,
+      "profiles": {
+        "peak": {
+          "time": "17:15-17:30",
+          "approaches": {
+            "north": {
+              "motorcycle": 80,
+              "car": 55,
+              "bus": 8
+            },
+            "east": {
+              "motorcycle": 70,
+              "car": 45,
+              "bus": 7
+            },
+            "south": {
+              "motorcycle": 85,
+              "car": 58,
+              "bus": 9
+            },
+            "west": {
+              "motorcycle": 40,
+              "car": 22,
+              "bus": 3
+            }
+          }
+        },
+        "offpeak": {
+          "time": "10:00-10:15",
+          "approaches": {
+            "north": {
+              "motorcycle": 35,
+              "car": 24,
+              "bus": 4
+            },
+            "east": {
+              "motorcycle": 30,
+              "car": 20,
+              "bus": 3
+            },
+            "south": {
+              "motorcycle": 36,
+              "car": 25,
+              "bus": 4
+            },
+            "west": {
+              "motorcycle": 17,
+              "car": 10,
+              "bus": 2
+            }
+          }
+        }
+      },
+      "turning": {
+        "north": {
+          "east": 0.25,
+          "south": 0.5,
+          "west": 0.22,
+          "north": 0.03
+        },
+        "east": {
+          "south": 0.35,
+          "west": 0.25,
+          "north": 0.37,
+          "east": 0.03
+        },
+        "south": {
+          "west": 0.2,
+          "north": 0.5,
+          "east": 0.27,
+          "south": 0.03
+        },
+        "west": {
+          "north": 0.35,
+          "east": 0.3,
+          "south": 0.32,
+          "west": 0.03
+        }
+      },
+      "observed_blockages": []
+    }
+  }
+}

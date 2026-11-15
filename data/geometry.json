@@ -1,0 +1,200 @@
+{
+  "note": "PROVISIONAL GEOMETRY. Angles, lanes, radii and names are approximate and must be replaced with the field sketch. angle_deg: 0 = east, 90 = north, 180 = west, 270 = south. Roundabouts circulate counterclockwise (right-hand traffic). Display names are in Spanish because they appear in the UI.",
+  "lane_width_m": 3.5,
+  "active_site": "la_lucha",
+  "sites": {
+    "la_lucha": {
+      "name": "Intercambiador de La Lucha (glorieta a nivel)",
+      "coordinates": null,
+      "radius_m": 28,
+      "ring_lanes": 2,
+      "approaches": [
+        {
+          "id": "north",
+          "name": "Acceso norte (vía por verificar)",
+          "angle_deg": 90,
+          "lanes_in": 2,
+          "lanes_out": 2,
+          "approach_length_m": 110,
+          "exit_length_m": 70,
+          "exit_capacity_vph": {
+            "peak": 1500,
+            "offpeak": 2400
+          }
+        },
+        {
+          "id": "east",
+          "name": "Acceso oriente (vía por verificar)",
+          "angle_deg": 0,
+          "lanes_in": 1,
+          "lanes_out": 1,
+          "approach_length_m": 90,
+          "exit_length_m": 60,
+          "exit_capacity_vph": {
+            "peak": 900,
+            "offpeak": 1500
+          }
+        },
+        {
+          "id": "south",
+          "name": "Acceso sur (vía por verificar)",
+          "angle_deg": 270,
+          "lanes_in": 2,
+          "lanes_out": 2,
+          "approach_length_m": 110,
+          "exit_length_m": 70,
+          "exit_capacity_vph": {
+            "peak": 450,
+            "offpeak": 2400
+          }
+        },
+        {
+          "id": "west",
+          "name": "Acceso occidente (vía por verificar)",
+          "angle_deg": 180,
+          "lanes_in": 1,
+          "lanes_out": 1,
+          "approach_length_m": 90,
+          "exit_length_m": 60,
+          "exit_capacity_vph": {
+            "peak": 900,
+            "offpeak": 1500
+          }
+        }
+      ],
+      "signal_phases": [
+        [
+          "north",
+          "south"
+        ],
+        [
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "mamatoco": {
+      "name": "Glorieta de Mamatoco",
+      "coordinates": null,
+      "radius_m": 22,
+      "ring_lanes": 2,
+      "approaches": [
+        {
+          "id": "north",
+          "name": "Acceso norte (vía por verificar)",
+          "angle_deg": 80,
+          "lanes_in": 1,
+          "lanes_out": 1,
+          "approach_length_m": 90,
+          "exit_length_m": 60,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "east",
+          "name": "Acceso oriente (vía por verificar)",
+          "angle_deg": 350,
+          "lanes_in": 2,
+          "lanes_out": 2,
+          "approach_length_m": 100,
+          "exit_length_m": 70,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "south",
+          "name": "Acceso sur (vía por verificar)",
+          "angle_deg": 260,
+          "lanes_in": 1,
+          "lanes_out": 1,
+          "approach_length_m": 90,
+          "exit_length_m": 60,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "west",
+          "name": "Acceso occidente (vía por verificar)",
+          "angle_deg": 170,
+          "lanes_in": 2,
+          "lanes_out": 2,
+          "approach_length_m": 100,
+          "exit_length_m": 70,
+          "exit_capacity_vph": {
+            "peak": 1200,
+            "offpeak": 2000
+          }
+        }
+      ],
+      "signal_phases": [
+        [
+          "north",
+          "south"
+        ],
+        [
+          "east",
+          "west"
+        ]
+      ]
+    },
+    "la_piragua": {
+      "name": "Glorieta La Piragua (en obra)",
+      "under_construction": true,
+      "coordinates": null,
+      "radius_m": 32,
+      "ring_lanes": 2,
+      "approaches": [
+        {
+          "id": "north",
+          "name": "Acceso norte (vía por verificar)",
+          "angle_deg": 95,
+          "lanes_in": 2,
+          "lanes_out": 2,
+          "approach_length_m": 110,
+          "exit_length_m": 70,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "east",
+          "name": "Acceso oriente (vía por verificar)",
+          "angle_deg": 10,
+          "lanes_in": 2,
+          "lanes_out": 2,
+          "approach_length_m": 110,
+          "exit_length_m": 70,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "south",
+          "name": "Acceso sur (vía por verificar)",
+          "angle_deg": 265,
+          "lanes_in": 2,
+          "lanes_out": 2,
+          "approach_length_m": 110,
+          "exit_length_m": 70,
+          "exit_capacity_vph": {
+            "peak": 1400,
+            "offpeak": 2400
+          }
+        },
+        {
+          "id": "west",
+          "name": "Acceso occidente (vía por verificar)",
+          "angle_deg": 185,
+          "lanes_in": 1,
+          "lanes_out": 1,
+          "approach_length_m": 90,
+          "exit_length_m": 60,
+          "exit_capacity_vph": null
+        }
+      ],
+      "signal_phases": [
+        [
+          "north",
+          "south"
+        ],
+        [
+          "east",
+          "west"
+        ]
+      ]
+    }
+  }
+}

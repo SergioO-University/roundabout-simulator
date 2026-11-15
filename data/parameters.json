@@ -1,0 +1,82 @@
+{
+  "note": "Typical reference values. The team must review and justify them (for example, timing on the video how long a motorcycle or a car takes to cover a known stretch).",
+  "vehicles": {
+    "motorcycle": {
+      "length_m": 2,
+      "width_m": 0.8,
+      "max_speed_ms": 11,
+      "acceleration_ms2": 3,
+      "deceleration_ms2": 5,
+      "min_gap_m": 1,
+      "critical_gap_s": 2,
+      "pce": 0.4
+    },
+    "car": {
+      "length_m": 4.5,
+      "width_m": 1.8,
+      "max_speed_ms": 9.7,
+      "acceleration_ms2": 2,
+      "deceleration_ms2": 4.5,
+      "min_gap_m": 2,
+      "critical_gap_s": 3.2,
+      "pce": 1
+    },
+    "bus": {
+      "length_m": 9,
+      "width_m": 2.4,
+      "max_speed_ms": 8.3,
+      "acceleration_ms2": 1.2,
+      "deceleration_ms2": 3.5,
+      "min_gap_m": 2.5,
+      "critical_gap_s": 4,
+      "pce": 2
+    }
+  },
+  "roundabout": {
+    "max_speed_ms": 7,
+    "aggressiveness_factor": 0.4,
+    "ring_stop_distance_m": 10
+  },
+  "signal": {
+    "green_s": [
+      30,
+      20
+    ],
+    "yellow_s": 3,
+    "all_red_s": 2
+  },
+  "officer": {
+    "turn_s": 40,
+    "transition_s": 6,
+    "prevent_blocking": true,
+    "groups": {},
+    "groups_note": "Optional. Example: \"groups\": { \"la_lucha\": [[\"north\",\"south\"],[\"east\",\"west\"]] } if the officer lets two opposite approaches go at the same time."
+  },
+  "simulation": {
+    "step_s": 0.1,
+    "seed": 2026,
+    "max_duration_s": 3600,
+    "comparison_duration_s": 900,
+    "arrival_mode": "exact_count"
+  },
+  "test_case": [
+    {
+      "t": 0,
+      "approach": "east",
+      "type": "car",
+      "destination": "west"
+    },
+    {
+      "t": 2,
+      "approach": "east",
+      "type": "car",
+      "destination": "west"
+    },
+    {
+      "t": 4,
+      "approach": "east",
+      "type": "car",
+      "destination": "west"
+    }
+  ]
+}
