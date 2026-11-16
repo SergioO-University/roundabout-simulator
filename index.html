@@ -8,9 +8,9 @@
   </head>
   <body>
     <header class="header">
-      <div>
+      <div class="title">
         <h1>Simulador de cuellos de botella en glorietas</h1>
-        <p class="subtitle">Santa Marta · comparación de formas de operar un punto con las mismas llegadas</p>
+        <span class="subtitle">Santa Marta · mismas llegadas, distintas formas de operar</span>
       </div>
       <div class="badges">
         <span id="badge-test-data" class="badge warning" hidden>Datos de prueba</span>
@@ -19,100 +19,122 @@
     </header>
 
     <main class="layout">
-      <section class="scene">
-        <canvas id="canvas" aria-label="Dibujo de la glorieta y los vehículos"></canvas>
-        <div class="legend">
-          <span><i style="background: var(--motorcycle)"></i>Moto</span>
-          <span><i style="background: var(--car)"></i>Carro</span>
-          <span><i style="background: var(--bus)"></i>Buseta</span>
-          <span><i class="outline"></i>Atravesado</span>
+      <section class="stage">
+        <div class="scene">
+          <canvas id="canvas" aria-label="Dibujo de la glorieta y los vehículos"></canvas>
+
+          <div class="toolbar">
+            <button id="btn-play" class="primary">▶ Iniciar</button>
+            <button id="btn-reset" title="Reiniciar la corrida con la misma semilla">↺</button>
+            <div class="segmented" id="speeds">
+              <button data-speed="1">×1</button>
+              <button data-speed="5">×5</button>
+              <button data-speed="10">×10</button>
+            </div>
+            <span class="clock" id="clock">0:00</span>
+            <span class="phase" id="phase-info" hidden></span>
+          </div>
+
+          <div class="toolbar right">
+            <label class="toggle"><input type="checkbox" id="chk-map" /> Mapa de fondo</label>
+            <button id="btn-fit" title="Volver a encuadrar la glorieta">⤢ Encuadrar</button>
+          </div>
+
+          <div class="legend">
+            <span><svg viewBox="0 0 28 14" class="icon"><ellipse cx="14" cy="7" rx="13" ry="6.5" fill="#fff" stroke="#d1d5db"/><rect x="18" y="5" width="7" height="4" rx="2" fill="#6b7280"/><rect x="2" y="5" width="7" height="4" rx="2" fill="#6b7280"/><ellipse cx="13" cy="7" rx="4" ry="6" fill="#f97316"/><circle cx="15" cy="7" r="3.4" fill="#facc15" stroke="rgba(0,0,0,.35)" stroke-width=".7"/></svg>Moto</span>
+            <span><svg viewBox="0 0 30 14" class="icon"><rect x="1" y="1" width="28" height="12" rx="4" fill="#facc15" stroke="rgba(0,0,0,.45)"/><rect x="18" y="2.5" width="5" height="9" rx="1.5" fill="#0f172a"/><rect x="7" y="2.5" width="10" height="9" rx="2" fill="#fde68a"/><rect x="2" y="3" width="3" height="8" rx="1" fill="#0f172a"/></svg>Carro / taxi</span>
+            <span><svg viewBox="0 0 44 14" class="icon"><rect x="1" y="1" width="42" height="12" rx="2" fill="#10b981" stroke="rgba(0,0,0,.45)"/><rect x="3" y="3" width="33" height="8" rx="1.5" fill="#f8fafc"/><rect x="3" y="6.2" width="33" height="1.6" fill="#0d9467"/><rect x="38" y="2.5" width="4" height="9" rx="1" fill="#0f172a"/></svg>Buseta</span>
+            <span><svg viewBox="0 0 16 14" class="icon"><circle cx="8" cy="7" r="6" fill="rgba(239,68,68,.25)" stroke="#ef4444" stroke-width="1.6"/></svg>Atravesado</span>
+            <span><svg viewBox="0 0 10 10" class="icon small"><rect x="1" y="2" width="8" height="6" rx="1" fill="#ff2a2a"/></svg>Frenando</span>
+            <span><svg viewBox="0 0 10 10" class="icon small"><rect x="1" y="2" width="8" height="6" rx="1" fill="#fb923c"/></svg>Va a salir</span>
+            <span class="hint">Rueda: zoom · arrastrar: mover</span>
+          </div>
+        </div>
+
+        <div class="kpi-strip">
+          <div class="kpi"><span class="value" id="kpi-discharge">0</span><span class="caption">veh/min · evacuación último minuto</span></div>
+          <div class="kpi"><span class="value" id="kpi-wait">0</span><span class="caption">s · espera promedio</span></div>
+          <div class="kpi"><span class="value" id="kpi-queue">0</span><span class="caption">veh · cola máxima</span></div>
+          <div class="kpi"><span class="value" id="kpi-blocked">0</span><span class="caption">s · anillo bloqueado</span></div>
+          <p class="extra" id="extra-metrics"></p>
         </div>
       </section>
 
       <aside class="panel">
-        <div class="card">
-          <h2>Escenario</h2>
-          <label>Punto
-            <select id="sel-site"></select>
-          </label>
-          <div class="row2">
-            <label>Perfil de demanda
-              <select id="sel-profile">
-                <option value="peak">Hora pico</option>
-                <option value="offpeak">Hora valle</option>
-                <option value="test">Caso de prueba (3 vehículos)</option>
-              </select>
+        <nav class="tabs" id="tabs">
+          <button data-tab="sim" class="active">Simulación</button>
+          <button data-tab="cmp">Comparar escenarios</button>
+        </nav>
+
+        <div class="tab-body" id="tab-sim">
+          <div class="card">
+            <h2>Escenario</h2>
+            <label>Punto
+              <select id="sel-site"></select>
             </label>
-            <label>Semilla
-              <input id="inp-seed" type="number" min="1" step="1" />
-            </label>
+            <div class="row2">
+              <label>Perfil de demanda
+                <select id="sel-profile">
+                  <option value="peak">Hora pico</option>
+                  <option value="offpeak">Hora valle</option>
+                  <option value="test">Caso de prueba (3 vehículos)</option>
+                </select>
+              </label>
+              <label>Semilla
+                <input id="inp-seed" type="number" min="1" step="1" />
+              </label>
+            </div>
+            <p id="count-time" class="note"></p>
           </div>
-          <p id="count-time" class="note"></p>
+
+          <div class="card">
+            <h2>Modo de operación</h2>
+            <div class="segmented" id="modes">
+              <button data-mode="current">Actual</button>
+              <button data-mode="signal">Semáforo</button>
+              <button data-mode="officer">Agente</button>
+            </div>
+            <p id="mode-description" class="note"></p>
+            <div id="signal-controls" class="controls" hidden></div>
+            <div id="officer-controls" class="controls" hidden></div>
+            <p id="phase-warnings" class="warning-box" hidden></p>
+          </div>
+
+          <div class="card">
+            <h2>Accesos</h2>
+            <table class="table" id="approach-table">
+              <thead>
+                <tr><th>Acceso</th><th>Cola</th><th>Máx</th><th>Espera</th><th title="Llegadas en los primeros 15 min simulados frente a lo contado en campo">Llegadas 15 min</th></tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
 
-        <div class="card">
-          <h2>Modo de operación</h2>
-          <div class="segmented" id="modes">
-            <button data-mode="current">Actual</button>
-            <button data-mode="signal">Semáforo</button>
-            <button data-mode="officer">Agente</button>
+        <div class="tab-body" id="tab-cmp" hidden>
+          <div class="card">
+            <h2>Comparador</h2>
+            <p class="note">Corre dos modos con la misma semilla y el mismo perfil durante 15 minutos simulados, sin dibujar. Usa el punto, el perfil y la semilla de la pestaña Simulación.</p>
+            <div class="row2 equal">
+              <label>Modo A <select id="cmp-a"></select></label>
+              <label>Modo B <select id="cmp-b"></select></label>
+            </div>
+            <button id="btn-compare" class="primary wide">Comparar</button>
           </div>
-          <p id="mode-description" class="note"></p>
-          <div id="signal-controls" class="controls" hidden></div>
-          <div id="officer-controls" class="controls" hidden></div>
-          <p id="phase-warnings" class="warning-box" hidden></p>
-        </div>
-
-        <div class="card">
-          <h2>Reproducción</h2>
-          <div class="button-row">
-            <button id="btn-play" class="primary">▶ Iniciar</button>
-            <button id="btn-reset">↺ Reiniciar</button>
+          <div class="card" id="cmp-card" hidden>
+            <div id="cmp-result"></div>
+            <div class="button-row">
+              <button id="exp-cmp-csv">CSV</button>
+              <button id="exp-cmp-json">JSON</button>
+            </div>
           </div>
-          <div class="segmented" id="speeds">
-            <button data-speed="1">×1</button>
-            <button data-speed="5">×5</button>
-            <button data-speed="10">×10</button>
+          <div class="card">
+            <h2>Exportar</h2>
+            <button id="exp-veh-csv" class="wide">Vehículos de la corrida actual (CSV)</button>
           </div>
-        </div>
-
-        <div class="card">
-          <h2>Métricas en tiempo real</h2>
-          <div class="kpis">
-            <div class="kpi"><span class="value" id="kpi-discharge">0</span><span class="caption">veh/min<br />evacuación (último min)</span></div>
-            <div class="kpi"><span class="value" id="kpi-wait">0</span><span class="caption">s<br />espera promedio</span></div>
-            <div class="kpi"><span class="value" id="kpi-queue">0</span><span class="caption">veh<br />cola máxima</span></div>
-          </div>
-          <table class="table" id="approach-table">
-            <thead>
-              <tr><th>Acceso</th><th>Cola</th><th>Máx</th><th>Espera</th><th title="Llegadas en los primeros 15 min simulados frente a lo contado en campo">Llegadas 15 min</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-          <p class="note" id="extra-metrics"></p>
         </div>
       </aside>
     </main>
-
-    <section class="comparator">
-      <div class="comparator-header">
-        <div>
-          <h2>Comparador de escenarios</h2>
-          <p class="note">Corre dos modos con la misma semilla y el mismo perfil durante 15 minutos simulados, sin dibujar.</p>
-        </div>
-        <div class="comparator-controls">
-          <label>Modo A <select id="cmp-a"></select></label>
-          <label>Modo B <select id="cmp-b"></select></label>
-          <button id="btn-compare" class="primary">Comparar</button>
-        </div>
-      </div>
-      <div id="cmp-result"></div>
-      <div class="button-row export">
-        <button id="exp-cmp-csv" disabled>Exportar comparación (CSV)</button>
-        <button id="exp-cmp-json" disabled>Exportar comparación (JSON)</button>
-        <button id="exp-veh-csv">Exportar vehículos de la corrida actual (CSV)</button>
-      </div>
-    </section>
 
     <script src="data/embedded-data.js"></script>
     <script src="js/geometry.js"></script>
@@ -121,6 +143,7 @@
     <script src="js/vehicles.js"></script>
     <script src="js/metrics.js"></script>
     <script src="js/engine.js"></script>
+    <script src="js/icons.js"></script>
     <script src="js/renderer.js"></script>
     <script src="js/data.js"></script>
     <script src="js/app.js"></script>

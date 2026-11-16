@@ -114,7 +114,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         }
       }
     }
-    const redApproaches = e.geo.approaches.filter((a) => e.control.ringRedAt(a.id));
+    const redApproaches = e.geo.approaches.filter((a) => a.hasEntry && e.control.ringRedAt(a.id));
     const leaving = [];
 
     for (let j = 0; j < n; j++) {
@@ -254,8 +254,8 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
 
   Sim.moveVehicles = function (e) {
     e.permissions = {};
-    for (const a of e.geo.approaches) moveExit(e, a);
+    for (const a of e.geo.approaches) if (a.hasExit) moveExit(e, a);
     moveRing(e);
-    for (const a of e.geo.approaches) moveApproach(e, a);
+    for (const a of e.geo.approaches) if (a.hasEntry) moveApproach(e, a);
   };
 })();

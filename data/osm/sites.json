@@ -1,0 +1,229 @@
+{
+  "note": "Configuration used by tools/build-geometry.js to generate data/geometry.json from OpenStreetMap data (files in this folder). Each approach lists the OSM way ids that form its entry (from far away to the ring) and its exit (from the ring outward). A negative id means the way is traversed against its drawing direction. Names are in Spanish because they appear in the UI.",
+  "active_site": "la_lucha",
+  "max_entry_length_m": 130,
+  "max_exit_length_m": 90,
+  "sites": {
+    "la_lucha": {
+      "name": "Rotonda de La Lucha",
+      "source": "lucha-mamatoco.json",
+      "ring_way": 527068720,
+      "ring_lanes": 2,
+      "approaches": [
+        {
+          "id": "ferrocarril",
+          "name": "Av. del Ferrocarril",
+          "entry": [
+            153939537
+          ],
+          "exit": [
+            153685969
+          ],
+          "entry_lanes": 2,
+          "exit_lanes": 2,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "troncal_cienaga",
+          "name": "Salida a Troncal (Ciénaga)",
+          "entry": null,
+          "exit": [
+            549555148
+          ],
+          "exit_lanes": 2,
+          "exit_capacity_vph": {
+            "peak": 450,
+            "offpeak": 2400
+          }
+        },
+        {
+          "id": "calle31_sur",
+          "name": "Calle 31 (sur)",
+          "entry": [
+            -680187454,
+            549555140
+          ],
+          "exit": [
+            680187451,
+            680187454
+          ],
+          "entry_lanes": 1,
+          "exit_lanes": 1,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "calle31_oriente",
+          "name": "Calle 31 (oriente)",
+          "entry": [
+            -549555139,
+            549555142
+          ],
+          "exit": [
+            549555141,
+            549555139
+          ],
+          "entry_lanes": 1,
+          "exit_lanes": 1,
+          "exit_capacity_vph": {
+            "peak": 900,
+            "offpeak": 1500
+          }
+        },
+        {
+          "id": "conector_troncal",
+          "name": "Conector Troncal (nororiente)",
+          "entry": [
+            585190412,
+            549555144
+          ],
+          "exit": [
+            549555143,
+            -585190412
+          ],
+          "entry_lanes": 1,
+          "exit_lanes": 1,
+          "exit_capacity_vph": null
+        }
+      ],
+      "context_bridges": [
+        527068721,
+        549555137
+      ]
+    },
+    "mamatoco": {
+      "name": "Rotonda Mamatoco",
+      "source": "lucha-mamatoco.json",
+      "ring_way": 422436231,
+      "ring_lanes": 2,
+      "approaches": [
+        {
+          "id": "troncal_oriente",
+          "name": "Troncal del Caribe (oriente)",
+          "entry": [
+            28788305
+          ],
+          "exit": [
+            422436240
+          ],
+          "entry_lanes": 2,
+          "exit_lanes": 2,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "via_alterna",
+          "name": "Vía Alterna al Puerto",
+          "entry": [
+            -348539500,
+            144415502
+          ],
+          "exit": [
+            28173547,
+            348539500
+          ],
+          "entry_lanes": 1,
+          "exit_lanes": 1,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "calle29",
+          "name": "Av. Calle 29",
+          "entry": [
+            37876707
+          ],
+          "exit": [
+            688564411
+          ],
+          "entry_lanes": 2,
+          "exit_lanes": 2,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "troncal_occidente",
+          "name": "Troncal del Caribe (occidente)",
+          "entry": [
+            527059442
+          ],
+          "exit": [
+            144415507
+          ],
+          "entry_lanes": 2,
+          "exit_lanes": 2,
+          "exit_capacity_vph": {
+            "peak": 1200,
+            "offpeak": 2400
+          }
+        }
+      ],
+      "context_bridges": []
+    },
+    "la_piragua": {
+      "name": "Rotonda La Piragua (José Benito Barrios)",
+      "under_construction": true,
+      "source": "la-piragua.json",
+      "ring_way": 527059443,
+      "ring_lanes": 2,
+      "approaches": [
+        {
+          "id": "troncal_mamatoco",
+          "name": "Troncal (hacia Mamatoco)",
+          "entry": [
+            144415507
+          ],
+          "exit": [
+            527059442
+          ],
+          "entry_lanes": 2,
+          "exit_lanes": 2,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "libertador",
+          "name": "Av. del Libertador",
+          "entry": [
+            30319570
+          ],
+          "exit": [
+            527054039
+          ],
+          "entry_lanes": 2,
+          "exit_lanes": 2,
+          "exit_capacity_vph": null
+        },
+        {
+          "id": "troncal_lucha",
+          "name": "Troncal (hacia La Lucha)",
+          "entry": [
+            348539499
+          ],
+          "exit": [
+            527061143
+          ],
+          "entry_lanes": 2,
+          "exit_lanes": 2,
+          "exit_capacity_vph": {
+            "peak": 1400,
+            "offpeak": 2400
+          }
+        },
+        {
+          "id": "carrera35",
+          "name": "Carrera 35",
+          "entry": [
+            51678828,
+            688564420,
+            527061145
+          ],
+          "exit": [
+            527061146,
+            -688564420,
+            -51678828
+          ],
+          "entry_lanes": 1,
+          "exit_lanes": 1,
+          "exit_capacity_vph": null
+        }
+      ],
+      "context_bridges": []
+    }
+  }
+}

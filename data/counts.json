@@ -1,114 +1,118 @@
 {
-  "note": "TEST DATA (made up). Replace with the real 15-minute counts per approach and vehicle type. turning = share of vehicles from each approach that leave through each exit (estimate it from the video).",
+  "note": "TEST DATA (made up). Replace with the real 15-minute counts per approach and vehicle type. Only approaches with an entry are counted. turning = share of vehicles from each approach that leave through each exit (estimate it from the video).",
   "sites": {
     "la_lucha": {
-      "site": "Intercambiador de La Lucha",
+      "site": "Rotonda de La Lucha",
       "is_test_data": true,
       "coordinates": null,
       "profiles": {
         "peak": {
           "time": "17:15-17:30",
           "approaches": {
-            "north": {
+            "ferrocarril": {
               "motorcycle": 134,
               "car": 85,
               "bus": 13
             },
-            "east": {
-              "motorcycle": 73,
-              "car": 42,
-              "bus": 6
-            },
-            "south": {
+            "calle31_sur": {
               "motorcycle": 123,
               "car": 76,
               "bus": 10
             },
-            "west": {
+            "calle31_oriente": {
               "motorcycle": 62,
               "car": 35,
               "bus": 4
+            },
+            "conector_troncal": {
+              "motorcycle": 73,
+              "car": 42,
+              "bus": 6
             }
           }
         },
         "offpeak": {
           "time": "10:00-10:15",
           "approaches": {
-            "north": {
+            "ferrocarril": {
               "motorcycle": 41,
               "car": 30,
               "bus": 5
             },
-            "east": {
-              "motorcycle": 22,
-              "car": 14,
-              "bus": 2
-            },
-            "south": {
+            "calle31_sur": {
               "motorcycle": 37,
               "car": 26,
               "bus": 4
             },
-            "west": {
+            "calle31_oriente": {
               "motorcycle": 19,
               "car": 11,
+              "bus": 2
+            },
+            "conector_troncal": {
+              "motorcycle": 22,
+              "car": 14,
               "bus": 2
             }
           }
         }
       },
       "turning": {
-        "north": {
-          "east": 0.2,
-          "south": 0.6,
-          "west": 0.17,
-          "north": 0.03
+        "ferrocarril": {
+          "troncal_cienaga": 0.45,
+          "calle31_sur": 0.2,
+          "calle31_oriente": 0.15,
+          "conector_troncal": 0.18,
+          "ferrocarril": 0.02
         },
-        "east": {
-          "south": 0.3,
-          "west": 0.4,
-          "north": 0.28,
-          "east": 0.02
+        "calle31_sur": {
+          "calle31_oriente": 0.15,
+          "conector_troncal": 0.3,
+          "ferrocarril": 0.45,
+          "troncal_cienaga": 0.08,
+          "calle31_sur": 0.02
         },
-        "south": {
-          "west": 0.2,
-          "north": 0.6,
-          "east": 0.17,
-          "south": 0.03
+        "calle31_oriente": {
+          "conector_troncal": 0.1,
+          "ferrocarril": 0.35,
+          "troncal_cienaga": 0.35,
+          "calle31_sur": 0.18,
+          "calle31_oriente": 0.02
         },
-        "west": {
-          "north": 0.3,
-          "east": 0.4,
-          "south": 0.28,
-          "west": 0.02
+        "conector_troncal": {
+          "ferrocarril": 0.4,
+          "troncal_cienaga": 0.3,
+          "calle31_sur": 0.2,
+          "calle31_oriente": 0.08,
+          "conector_troncal": 0.02
         }
       },
       "observed_blockages": []
     },
     "mamatoco": {
-      "site": "Glorieta de Mamatoco",
+      "site": "Rotonda Mamatoco",
       "is_test_data": true,
       "coordinates": null,
       "profiles": {
         "peak": {
           "time": "17:15-17:30",
           "approaches": {
-            "north": {
-              "motorcycle": 60,
-              "car": 32,
-              "bus": 6
-            },
-            "east": {
+            "troncal_oriente": {
               "motorcycle": 85,
               "car": 50,
               "bus": 8
             },
-            "south": {
+            "via_alterna": {
+              "motorcycle": 60,
+              "car": 32,
+              "bus": 6
+            },
+            "calle29": {
               "motorcycle": 55,
               "car": 28,
               "bus": 5
             },
-            "west": {
+            "troncal_occidente": {
               "motorcycle": 90,
               "car": 52,
               "bus": 9
@@ -118,22 +122,22 @@
         "offpeak": {
           "time": "10:00-10:15",
           "approaches": {
-            "north": {
-              "motorcycle": 25,
-              "car": 14,
-              "bus": 3
-            },
-            "east": {
+            "troncal_oriente": {
               "motorcycle": 38,
               "car": 22,
               "bus": 4
             },
-            "south": {
+            "via_alterna": {
+              "motorcycle": 25,
+              "car": 14,
+              "bus": 3
+            },
+            "calle29": {
               "motorcycle": 22,
               "car": 12,
               "bus": 2
             },
-            "west": {
+            "troncal_occidente": {
               "motorcycle": 40,
               "car": 24,
               "bus": 4
@@ -142,57 +146,57 @@
         }
       },
       "turning": {
-        "north": {
-          "east": 0.3,
-          "south": 0.35,
-          "west": 0.33,
-          "north": 0.02
+        "troncal_oriente": {
+          "via_alterna": 0.2,
+          "calle29": 0.18,
+          "troncal_occidente": 0.6,
+          "troncal_oriente": 0.02
         },
-        "east": {
-          "south": 0.2,
-          "west": 0.6,
-          "north": 0.18,
-          "east": 0.02
+        "via_alterna": {
+          "calle29": 0.3,
+          "troncal_occidente": 0.35,
+          "troncal_oriente": 0.33,
+          "via_alterna": 0.02
         },
-        "south": {
-          "west": 0.3,
-          "north": 0.35,
-          "east": 0.33,
-          "south": 0.02
+        "calle29": {
+          "troncal_occidente": 0.3,
+          "troncal_oriente": 0.35,
+          "via_alterna": 0.33,
+          "calle29": 0.02
         },
-        "west": {
-          "north": 0.2,
-          "east": 0.6,
-          "south": 0.18,
-          "west": 0.02
+        "troncal_occidente": {
+          "troncal_oriente": 0.6,
+          "via_alterna": 0.2,
+          "calle29": 0.18,
+          "troncal_occidente": 0.02
         }
       },
       "observed_blockages": []
     },
     "la_piragua": {
-      "site": "Glorieta La Piragua",
+      "site": "Rotonda La Piragua",
       "is_test_data": true,
       "coordinates": null,
       "profiles": {
         "peak": {
           "time": "17:15-17:30",
           "approaches": {
-            "north": {
+            "troncal_mamatoco": {
               "motorcycle": 80,
               "car": 55,
               "bus": 8
             },
-            "east": {
+            "libertador": {
               "motorcycle": 70,
               "car": 45,
               "bus": 7
             },
-            "south": {
+            "troncal_lucha": {
               "motorcycle": 85,
               "car": 58,
               "bus": 9
             },
-            "west": {
+            "carrera35": {
               "motorcycle": 40,
               "car": 22,
               "bus": 3
@@ -202,22 +206,22 @@
         "offpeak": {
           "time": "10:00-10:15",
           "approaches": {
-            "north": {
+            "troncal_mamatoco": {
               "motorcycle": 35,
               "car": 24,
               "bus": 4
             },
-            "east": {
+            "libertador": {
               "motorcycle": 30,
               "car": 20,
               "bus": 3
             },
-            "south": {
+            "troncal_lucha": {
               "motorcycle": 36,
               "car": 25,
               "bus": 4
             },
-            "west": {
+            "carrera35": {
               "motorcycle": 17,
               "car": 10,
               "bus": 2
@@ -226,29 +230,29 @@
         }
       },
       "turning": {
-        "north": {
-          "east": 0.25,
-          "south": 0.5,
-          "west": 0.22,
-          "north": 0.03
+        "troncal_mamatoco": {
+          "libertador": 0.25,
+          "troncal_lucha": 0.5,
+          "carrera35": 0.22,
+          "troncal_mamatoco": 0.03
         },
-        "east": {
-          "south": 0.35,
-          "west": 0.25,
-          "north": 0.37,
-          "east": 0.03
+        "libertador": {
+          "troncal_lucha": 0.35,
+          "carrera35": 0.25,
+          "troncal_mamatoco": 0.37,
+          "libertador": 0.03
         },
-        "south": {
-          "west": 0.2,
-          "north": 0.5,
-          "east": 0.27,
-          "south": 0.03
+        "troncal_lucha": {
+          "carrera35": 0.2,
+          "troncal_mamatoco": 0.5,
+          "libertador": 0.27,
+          "troncal_lucha": 0.03
         },
-        "west": {
-          "north": 0.35,
-          "east": 0.3,
-          "south": 0.32,
-          "west": 0.03
+        "carrera35": {
+          "troncal_mamatoco": 0.35,
+          "libertador": 0.3,
+          "troncal_lucha": 0.32,
+          "carrera35": 0.03
         }
       },
       "observed_blockages": []

@@ -49,17 +49,26 @@
 
   function reset() {
     const cfg = currentConfig();
-    const e = engine.reset(cfg);
+    let e;
+    try {
+      e = engine.reset(cfg);
+    } catch (err) {
+      $('count-time').textContent = '⚠ ' + err.message;
+      return;
+    }
     ui.accumulated = 0;
     const siteCounts = data.counts.sites[cfg.site];
+    const site = data.geometry.sites[cfg.site];
     $('badge-test-data').hidden = !(siteCounts && siteCounts.is_test_data);
     const profile = siteCounts && siteCounts.profiles[cfg.profile];
-    $('count-time').textContent =
+    let note =
       cfg.profile === 'test'
         ? 'Tres vehículos fijos definidos en parameters.json → test_case. Sirve para calcular la espera a mano.'
         : profile
           ? `Conteo de campo: ${profile.time}. Llegadas al azar con semilla ${cfg.seed}.`
           : '';
+    if (site.under_construction) note += ' ⚠ Punto en obra: la geometría de OpenStreetMap puede no reflejar el estado actual.';
+    $('count-time').textContent = note;
     $('mode-description').textContent = MODE_DESCRIPTIONS[cfg.mode];
     const problems = e.control.problems;
     $('phase-warnings').hidden = !problems.length;
@@ -90,13 +99,13 @@
     off.innerHTML = '';
     sig.hidden = ui.mode !== 'signal';
     off.hidden = ui.mode !== 'officer';
-    const shortName = (id) => e.geo.byId[id].name.replace(/\s*\(.*\)$/, '');
+    const name = (id) => e.geo.byId[id].name;
 
     if (ui.mode === 'signal') {
       if (!Array.isArray(params.signal.green_s)) params.signal.green_s = [params.signal.green_s];
       e.control.phases.forEach((phase, i) => {
         if (params.signal.green_s[i] === undefined) params.signal.green_s[i] = params.signal.green_s[i - 1] ?? 25;
-        slider(sig, `Verde fase ${i + 1}: ${phase.map(shortName).join(' + ')}`, 5, 90, params.signal.green_s[i], (v) => (params.signal.green_s[i] = v));
+        slider(sig, `Verde fase ${i + 1}: ${phase.map(name).join(' + ')}`, 5, 90, params.signal.green_s[i], (v) => (params.signal.green_s[i] = v));
       });
       slider(sig, 'Amarillo', 0, 6, params.signal.yellow_s, (v) => (params.signal.yellow_s = v));
       slider(sig, 'Todo rojo', 0, 6, params.signal.all_red_s, (v) => (params.signal.all_red_s = v));
@@ -116,19 +125,22 @@
   function buildApproachTable(e) {
     const body = $('approach-table').querySelector('tbody');
     body.innerHTML = '';
-    for (const a of e.geo.approaches) {
+    for (const id of e.geo.entryIds) {
       const row = document.createElement('tr');
-      row.dataset.id = a.id;
-      row.innerHTML = `<td>${a.id}</td><td data-c="queue"></td><td data-c="max"></td><td data-c="wait"></td><td data-c="arrivals"></td>`;
+      row.dataset.id = id;
+      row.innerHTML = `<td>${e.geo.byId[id].name}</td><td data-c="queue"></td><td data-c="max"></td><td data-c="wait"></td><td data-c="arrivals"></td>`;
       body.appendChild(row);
     }
   }
 
   function updateDashboard() {
+    const e = engine.state;
+    if (!e) return;
     const r = engine.summary();
     $('kpi-discharge').textContent = r.discharge_last_min;
     $('kpi-wait').textContent = r.avg_wait_s.toFixed(1);
     $('kpi-queue').textContent = r.queue_max_overall;
+    $('kpi-blocked').textContent = Math.round(r.blocked_time_s);
     for (const row of $('approach-table').querySelectorAll('tbody tr')) {
       const id = row.dataset.id;
       const cal = r.calibration[id];
@@ -146,16 +158,36 @@
         cell.title = 'En curso: se compara al llegar a 15 minutos simulados';
       } else {
         const ok = Math.abs(cal.difference_pct) <= 10;
-        cell.textContent = `${cal.simulated} / ${cal.counted} (${cal.difference_pct > 0 ? '+' : ''}${cal.difference_pct} %)`;
+        cell.textContent = `${cal.simulated}/${cal.counted} (${cal.difference_pct > 0 ? '+' : ''}${cal.difference_pct}%)`;
         cell.className = ok ? 'good' : 'bad';
         cell.title = ok ? 'Dentro del 10 % de lo contado' : 'Fuera del 10 % de lo contado';
       }
     }
-    const e = engine.state;
     $('extra-metrics').textContent =
-      `En el anillo: ${e.ring.length} · cruzaron: ${r.vehicles_crossed} de ${r.vehicles_generated} · ` +
-      `tiempo con bloqueo: ${r.blocked_time_s} s · atravesados: ${r.blocking_vehicles}` +
-      (ui.mode === 'current' ? '' : ` · verdes en conflicto: ${r.signal_conflicts}`);
+      `En el anillo: ${e.ring.length} · cruzaron ${r.vehicles_crossed} de ${r.vehicles_generated} · ` +
+      `vehículos atravesados: ${r.blocking_vehicles}` +
+      (ui.mode === 'current' ? '' : ` · verdes en conflicto: ${r.signal_conflicts}`) +
+      (renderer.mapTiles && renderer.tilesStatus === 'failed' ? ' · ⚠ mapa de fondo no disponible (sin internet)' : '');
+  }
+
+  const PHASE_NAMES = { green: 'Verde', yellow: 'Amarillo', all_red: 'Todo rojo' };
+  function updateClock() {
+    const e = engine.state;
+    const t = e ? e.t : 0;
+    $('clock').textContent = `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+    const info = $('phase-info');
+    if (!e || e.cfg.mode === 'current') {
+      info.hidden = true;
+      return;
+    }
+    const c = e.control;
+    const left = Math.max(0, c.currentPhaseDuration() - c.time);
+    const phaseName = c.phase === 'all_red' && e.cfg.mode === 'officer' ? 'Transición' : PHASE_NAMES[c.phase];
+    const who = c.phase === 'all_red' ? '' : ': ' + c.phases[c.index].map((id) => e.geo.byId[id].name).join(' + ');
+    info.hidden = false;
+    info.className = 'phase ' + c.phase;
+    info.textContent = `${phaseName}${who} · ${left.toFixed(0)} s`;
+    info.title = info.textContent;
   }
 
   // ---------- Animation loop ----------
@@ -172,6 +204,7 @@
       if (e.t >= e.duration) pause();
     }
     renderer.draw(engine.state);
+    updateClock();
     if (now - ui.lastDashboard > 250) {
       updateDashboard();
       ui.lastDashboard = now;
@@ -195,6 +228,8 @@
     $('btn-play').textContent = '▶ Iniciar';
   });
   for (const id of ['sel-site', 'sel-profile', 'inp-seed']) $(id).addEventListener('change', reset);
+  $('chk-map').addEventListener('change', (ev) => (renderer.mapTiles = ev.target.checked));
+  $('btn-fit').addEventListener('click', () => renderer.resetView());
 
   function markActive(container, attribute, value) {
     for (const b of container.querySelectorAll('button')) b.classList.toggle('active', b.dataset[attribute] === String(value));
@@ -212,24 +247,33 @@
     ui.speed = Number(b.dataset.speed);
     markActive($('speeds'), 'speed', ui.speed);
   });
+  $('tabs').addEventListener('click', (ev) => {
+    const b = ev.target.closest('button');
+    if (!b) return;
+    markActive($('tabs'), 'tab', b.dataset.tab);
+    $('tab-sim').hidden = b.dataset.tab !== 'sim';
+    $('tab-cmp').hidden = b.dataset.tab !== 'cmp';
+  });
 
   // ---------- Comparator ----------
   const ROWS = [
-    ['Capacidad de evacuación promedio (veh/min)', (r) => r.discharge_avg_per_min, 'higher'],
-    ['Evacuación en el último minuto (veh/min)', (r) => r.discharge_last_min, 'higher'],
-    ['Tiempo promedio de espera (s)', (r) => r.avg_wait_s, 'lower'],
-    ['Cola máxima en cualquier acceso (veh)', (r) => r.queue_max_overall, 'lower'],
+    ['Evacuación promedio (veh/min)', (r) => r.discharge_avg_per_min, 'higher'],
+    ['Evacuación último minuto (veh/min)', (r) => r.discharge_last_min, 'higher'],
+    ['Espera promedio (s)', (r) => r.avg_wait_s, 'lower'],
+    ['Cola máxima (veh)', (r) => r.queue_max_overall, 'lower'],
     ['Vehículos que cruzaron', (r) => r.vehicles_crossed, 'higher'],
-    ['Vehículos aún en cola al final', (r) => Object.values(r.queue_now).reduce((s, x) => s + x, 0), 'lower'],
-    ['Tiempo con el anillo bloqueado (s)', (r) => r.blocked_time_s, 'lower'],
-    ['Vehículos que quedaron atravesados', (r) => r.blocking_vehicles, 'lower'],
+    ['Aún en cola al final', (r) => Object.values(r.queue_now).reduce((s, x) => s + x, 0), 'lower'],
+    ['Anillo bloqueado (s)', (r) => r.blocked_time_s, 'lower'],
+    ['Vehículos atravesados', (r) => r.blocking_vehicles, 'lower'],
   ];
+  const SHORT_MODES = { current: 'Actual', signal: 'Semáforo', officer: 'Agente' };
 
   $('btn-compare').addEventListener('click', () => {
     const base = currentConfig();
     if (base.profile === 'test') base.profile = 'peak';
     const duration = params.simulation.comparison_duration_s;
     const modes = [$('cmp-a').value, $('cmp-b').value];
+    $('cmp-card').hidden = false;
     $('cmp-result').innerHTML = '<p class="note">Corriendo…</p>';
     setTimeout(() => {
       const results = modes.map((mode) => Sim.runHeadless(data, { ...base, mode, duration_s: duration }));
@@ -241,26 +285,24 @@
   function renderComparison() {
     const c = ui.comparison;
     const [a, b] = c.results;
-    const ids = Object.keys(a.queue_max);
+    const site = data.geometry.sites[c.config.site];
+    const nameOf = (id) => (site.approaches.find((x) => x.id === id) || { name: id }).name;
     const rows = ROWS.map(([name, f, better]) => [name, f(a), f(b), better]);
-    for (const id of ids) {
-      rows.push([`Cola máxima · ${id} (veh)`, a.queue_max[id], b.queue_max[id], 'lower']);
-      rows.push([`Espera promedio · ${id} (s)`, a.avg_wait_by_approach_s[id] ?? 0, b.avg_wait_by_approach_s[id] ?? 0, 'lower']);
+    for (const id of Object.keys(a.queue_max)) {
+      rows.push([`Cola máx · ${nameOf(id)}`, a.queue_max[id], b.queue_max[id], 'lower']);
+      rows.push([`Espera · ${nameOf(id)} (s)`, a.avg_wait_by_approach_s[id] ?? 0, b.avg_wait_by_approach_s[id] ?? 0, 'lower']);
     }
     c.rows = rows.map(([name, va, vb]) => ({ metric: name, a: va, b: vb, difference: Math.round((vb - va) * 10) / 10 }));
-    const siteName = data.geometry.sites[c.config.site].name;
     const profileName = { peak: 'pico', offpeak: 'valle' }[c.config.profile];
-    let html = `<p class="note">${siteName} · perfil ${profileName} · semilla ${c.config.seed} · ${c.config.duration_s / 60} min simulados</p>`;
-    html += `<table class="table"><thead><tr><th>Métrica</th><th>A: ${Sim.MODES[c.modes[0]]}</th><th>B: ${Sim.MODES[c.modes[1]]}</th><th>B − A</th></tr></thead><tbody>`;
+    let html = `<p class="note">${site.name} · ${profileName} · semilla ${c.config.seed} · ${c.config.duration_s / 60} min</p>`;
+    html += `<table class="table"><thead><tr><th>Métrica</th><th>A: ${SHORT_MODES[c.modes[0]]}</th><th>B: ${SHORT_MODES[c.modes[1]]}</th><th>B − A</th></tr></thead><tbody>`;
     for (const [name, va, vb, better] of rows) {
       const d = Math.round((vb - va) * 10) / 10;
       const cls = d === 0 ? '' : (d > 0) === (better === 'higher') ? 'good' : 'bad';
       html += `<tr><td>${name}</td><td>${va}</td><td>${vb}</td><td class="${cls}">${d > 0 ? '+' : ''}${d}</td></tr>`;
     }
-    html += '</tbody></table><p class="note">Verde: B es mejor que A en esa métrica. Rojo: B es peor.</p>';
+    html += '</tbody></table><p class="note">Verde: B es mejor que A. Rojo: B es peor.</p>';
     $('cmp-result').innerHTML = html;
-    $('exp-cmp-csv').disabled = false;
-    $('exp-cmp-json').disabled = false;
   }
 
   // ---------- Export ----------
@@ -277,12 +319,14 @@
 
   $('exp-cmp-csv').addEventListener('click', () => {
     const c = ui.comparison;
+    if (!c) return;
     const rows = [['metric', Sim.MODES[c.modes[0]], Sim.MODES[c.modes[1]], 'difference_B_minus_A']];
     for (const r of c.rows) rows.push([r.metric, r.a, r.b, r.difference]);
     download(`comparison-${c.config.site}-${c.config.profile}-seed${c.config.seed}.csv`, toCsv(rows), 'text/csv');
   });
   $('exp-cmp-json').addEventListener('click', () => {
     const c = ui.comparison;
+    if (!c) return;
     download(`comparison-${c.config.site}-${c.config.profile}-seed${c.config.seed}.json`, JSON.stringify(c, null, 2), 'application/json');
   });
   $('exp-veh-csv').addEventListener('click', () => {

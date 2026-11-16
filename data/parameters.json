@@ -62,21 +62,21 @@
   "test_case": [
     {
       "t": 0,
-      "approach": "east",
+      "approach": "calle31_oriente",
       "type": "car",
-      "destination": "west"
+      "destination": "ferrocarril"
     },
     {
       "t": 2,
-      "approach": "east",
+      "approach": "calle31_oriente",
       "type": "car",
-      "destination": "west"
+      "destination": "ferrocarril"
     },
     {
       "t": 4,
-      "approach": "east",
+      "approach": "calle31_oriente",
       "type": "car",
-      "destination": "west"
+      "destination": "ferrocarril"
     }
   ]
 }

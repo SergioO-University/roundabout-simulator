@@ -9,7 +9,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
   const r1 = (x) => Math.round(x * 10) / 10;
 
   Sim.createMetrics = function (geo, siteCounts, profile) {
-    const ids = geo.approaches.map((a) => a.id);
+    const ids = geo.entryIds; // queues, waits and calibration are per entry
     const m = {
       arrivals: {},
       arrivals15: {},
@@ -44,6 +44,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
 
     m.record = function (e) {
       for (const a of geo.approaches) {
+        if (!a.hasEntry) continue;
         const s = e.approaches[a.id];
         let n = s.pending.length;
         for (const v of s.lane) if (v.state === 'queued') n++;

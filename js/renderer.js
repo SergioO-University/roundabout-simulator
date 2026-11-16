@@ -1,17 +1,20 @@
 // renderer.js
 // CYCLE STEP 5: drawing. Reads the engine state and paints it on the canvas.
 // It never changes the state: if drawing fails, the results are not affected.
-// On-screen text is in Spanish (it is what the evaluator and the team see).
+// Roads are drawn from their real OpenStreetMap shapes. With internet, an optional map
+// background (CARTO Voyager tiles, © OpenStreetMap contributors © CARTO) is drawn underneath.
+// Mouse wheel zooms, dragging pans. On-screen text is in Spanish.
 var Sim = globalThis.Sim || (globalThis.Sim = {});
 
 (function () {
   const COLORS = {
-    background: '#dfe3d6',
+    background: '#e9ebe4',
+    context: '#cfd3c8',
     asphalt: '#4a4f57',
-    sidewalk: '#c9cdc0',
-    island: '#7fa66a',
-    centerLine: '#f2c94c',
-    laneLine: 'rgba(255,255,255,0.75)',
+    border: '#b9beb2',
+    island: '#9cc28a',
+    laneLine: 'rgba(255,255,255,0.7)',
+    bridge: 'rgba(107,114,128,0.42)',
     motorcycle: '#f59e0b',
     car: '#3b82f6',
     bus: '#10b981',
@@ -23,8 +26,53 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
   };
   Sim.COLORS = COLORS;
 
+  const TILE_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
+  const lon2tile = (lon, z) => ((lon + 180) / 360) * 2 ** z;
+  const lat2tile = (lat, z) => {
+    const r = (lat * Math.PI) / 180;
+    return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z;
+  };
+  const tile2lon = (x, z) => (x / 2 ** z) * 360 - 180;
+  const tile2lat = (y, z) => {
+    const n = Math.PI - (2 * Math.PI * y) / 2 ** z;
+    return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+  };
+
   Sim.createRenderer = function (canvas) {
-    const ctx = canvas.getContext('2d');
+    let ctx = canvas.getContext('2d');
+    let layer = null;
+    const lastSpeed = new WeakMap(); // previous drawn speed of each vehicle, to light up brake lights
+    const view = { zoom: 1, panX: 0, panY: 0, fitFor: null, baseScale: 1, centerX: 0, centerY: 0 };
+    const tiles = new Map();
+    const renderer = { mapTiles: false, tilesStatus: 'off' };
+
+    // ---------- Pan and zoom ----------
+    let drag = null;
+    canvas.addEventListener('wheel', (ev) => {
+      ev.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      const mx = ev.clientX - r.left - r.width / 2 - view.panX;
+      const my = ev.clientY - r.top - r.height / 2 - view.panY;
+      const factor = Math.exp(-ev.deltaY * 0.0015);
+      const newZoom = Math.min(8, Math.max(0.4, view.zoom * factor));
+      const k = newZoom / view.zoom;
+      view.panX -= mx * (k - 1);
+      view.panY -= my * (k - 1);
+      view.zoom = newZoom;
+    }, { passive: false });
+    canvas.addEventListener('mousedown', (ev) => (drag = { x: ev.clientX, y: ev.clientY, panX: view.panX, panY: view.panY }));
+    window.addEventListener('mousemove', (ev) => {
+      if (!drag) return;
+      view.panX = drag.panX + ev.clientX - drag.x;
+      view.panY = drag.panY + ev.clientY - drag.y;
+    });
+    window.addEventListener('mouseup', () => (drag = null));
+
+    renderer.resetView = function () {
+      view.zoom = 1;
+      view.panX = 0;
+      view.panY = 0;
+    };
 
     function fitSize() {
       const r = canvas.getBoundingClientRect();
@@ -36,185 +84,325 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         canvas.height = h;
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      return { w: r.width, h: r.height };
+      return { w: r.width, h: r.height, dpr };
+    }
+
+    // Area that must be visible when the view is reset: the ring and the modeled part of each road.
+    function fitBounds(geo) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      const add = (p) => {
+        minX = Math.min(minX, p.x);
+        maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y);
+      };
+      for (const p of geo.ringPoints) add({ x: p[0], y: p[1] });
+      for (const a of geo.approaches) {
+        if (a.hasEntry) add(Sim.pointAt(a.entryPath, Math.max(0, a.approachLength - 90)));
+        if (a.hasExit) add(Sim.pointAt(a.exitPath, Math.min(a.exitPath.length, 60)));
+      }
+      return { minX, maxX, minY, maxY };
     }
 
     function draw(e) {
-      const { w, h } = fitSize();
+      const { w, h, dpr } = fitSize();
       ctx.fillStyle = COLORS.background;
       ctx.fillRect(0, 0, w, h);
       if (!e) return;
       const geo = e.geo;
-      // The view shows about 65 m of each approach; longer queues show up in the label count.
-      const maxLength = Math.max(...geo.approaches.map((a) => Math.max(a.approachLength, a.exitLength)));
-      const visible = Math.min(maxLength, 65);
-      const extent = geo.rLine + visible + 4;
-      const scale = Math.min(w, h) / (2 * extent);
-      const cx = w / 2;
-      const cy = h / 2;
-      const X = (x) => cx + x * scale;
-      const Y = (y) => cy - y * scale;
 
-      // Point at distance r from the center along the approach axis, shifted 'lat' meters toward the inbound side.
-      const P = (a, r, lat) => {
-        const c = Math.cos(a.theta);
-        const s = Math.sin(a.theta);
-        return [X(r * c - lat * s), Y(r * s + lat * c)];
-      };
-      const rEnd = (a) => geo.rLine + Math.max(a.approachLength, a.exitLength);
-
-      // Approach roads
-      for (const a of geo.approaches) {
-        const W = geo.W;
-        const r0 = geo.R * 0.6;
-        const r1 = rEnd(a);
-        const left = a.nIn * W;
-        const right = -a.nOut * W;
-        ctx.fillStyle = COLORS.sidewalk;
-        polygon([P(a, r0, left + 1.5), P(a, r1, left + 1.5), P(a, r1, right - 1.5), P(a, r0, right - 1.5)]);
-        ctx.fillStyle = COLORS.asphalt;
-        polygon([P(a, r0, left), P(a, r1, left), P(a, r1, right), P(a, r0, right)]);
+      if (view.fitFor !== geo) {
+        const b = fitBounds(geo);
+        view.baseScale = Math.min((w - 40) / (b.maxX - b.minX), (h - 70) / (b.maxY - b.minY));
+        view.centerX = (b.minX + b.maxX) / 2;
+        view.centerY = (b.minY + b.maxY) / 2;
+        view.fitFor = geo;
+        renderer.resetView();
       }
+      const scale = view.baseScale * view.zoom;
+      const cx = w / 2 + view.panX;
+      const cy = h / 2 + view.panY;
+      const X = (x) => cx + (x - view.centerX) * scale;
+      const Y = (y) => cy - (y - view.centerY) * scale;
+      const W = geo.W;
 
-      // Ring and central island
-      const rOuter = geo.R + geo.ringWidth / 2;
-      const rIsland = Math.max(3, geo.R - geo.ringWidth / 2);
-      circle(0, 0, rOuter + 1.5, COLORS.sidewalk);
-      circle(0, 0, rOuter, COLORS.asphalt);
-      circle(0, 0, rIsland, COLORS.island);
-      ctx.setLineDash([2 * scale, 2 * scale]);
-      ctx.strokeStyle = COLORS.laneLine;
-      ctx.lineWidth = 1;
-      for (let k = 1; k < Math.round(geo.ringWidth / geo.W); k++) {
-        ctx.beginPath();
-        ctx.arc(X(0), Y(0), (rIsland + k * geo.W) * scale, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      ctx.setLineDash([]);
+      // ---------- Map background ----------
+      const showTiles = renderer.mapTiles && geo.center;
+      if (showTiles) drawTiles(geo, w, h, dpr, scale, X, Y);
+      else renderer.tilesStatus = 'off';
 
-      // Road markings, stop lines and signals
-      for (const a of geo.approaches) {
-        const r0 = rOuter + 1.5;
-        const r1 = rEnd(a);
-        line(P(a, r0, 0), P(a, r1, 0), COLORS.centerLine, 2, []);
-        for (let k = 1; k < a.nIn; k++) line(P(a, r0, k * geo.W), P(a, r1, k * geo.W), COLORS.laneLine, 1, [3 * scale, 3 * scale]);
-        for (let k = 1; k < a.nOut; k++) line(P(a, r0, -k * geo.W), P(a, r1, -k * geo.W), COLORS.laneLine, 1, [3 * scale, 3 * scale]);
-
-        const signal = e.control.signalFor(a.id);
-        const lineColor = signal === null ? '#ffffff' : COLORS[signal];
-        line(P(a, geo.rLine, 0.2), P(a, geo.rLine, a.nIn * geo.W - 0.2), lineColor, 3, signal === null ? [4, 3] : []);
-        if (signal !== null) {
-          const [sx, sy] = P(a, geo.rLine + 2, a.nIn * geo.W + 2.6);
-          ctx.fillStyle = '#111';
-          ctx.beginPath();
-          ctx.arc(sx, sy, 7, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = COLORS[signal];
-          ctx.beginPath();
-          ctx.arc(sx, sy, 5, 0, Math.PI * 2);
-          ctx.fill();
+      // ---------- Context roads (not simulated) ----------
+      if (!showTiles) {
+        for (const c of geo.context) {
+          if (c.kind === 'bridge') continue;
+          strokePath(c.path, c.lanes * W, COLORS.context);
         }
       }
 
-      // Vehicles
+      // ---------- Simulated roads ----------
+      // Over the map, roads are drawn opaque on a separate layer and blended once,
+      // so overlapping road pieces do not get darker where they join.
+      const asphalt = COLORS.asphalt;
+      const mainCtx = ctx;
+      if (showTiles) {
+        if (!layer || layer.width !== canvas.width || layer.height !== canvas.height) {
+          layer = document.createElement('canvas');
+          layer.width = canvas.width;
+          layer.height = canvas.height;
+        }
+        ctx = layer.getContext('2d');
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, layer.width, layer.height);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      if (!showTiles) {
+        for (const a of geo.approaches) {
+          if (a.hasEntry) strokePath(a.entryPath.pts, a.nIn * W + 2, COLORS.border);
+          if (a.hasExit) strokePath(a.exitPath.pts, a.nOut * W + 2, COLORS.border);
+        }
+        strokePath(geo.ring.pts, geo.ringWidth + 2, COLORS.border);
+      }
+      fillPolygon(geo.ringPoints, COLORS.island);
+      for (const a of geo.approaches) {
+        if (a.hasEntry) strokePath(a.entryPath.pts, a.nIn * W, asphalt);
+        if (a.hasExit) strokePath(a.exitPath.pts, a.nOut * W, asphalt);
+      }
+      strokePath(geo.ring.pts, geo.ringWidth, asphalt);
+
+      if (showTiles) {
+        ctx = mainCtx;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalAlpha = 0.78;
+        ctx.drawImage(layer, 0, 0);
+        ctx.restore();
+      }
+
+      // Lane lines
+      if (Math.round(geo.ringWidth / W) >= 2) strokePath(geo.ring.pts, 1, COLORS.laneLine, [2 * scale, 2 * scale]);
+      for (const a of geo.approaches) {
+        if (a.hasEntry && a.nIn >= 2) strokePath(a.entryPath.pts, 1, COLORS.laneLine, [3 * scale, 3 * scale]);
+        if (a.hasExit && a.nOut >= 2) strokePath(a.exitPath.pts, 1, COLORS.laneLine, [3 * scale, 3 * scale]);
+      }
+
+      // ---------- Stop lines and signals ----------
+      for (const a of geo.approaches) {
+        if (!a.hasEntry) continue;
+        const signal = e.control.signalFor(a.id);
+        const half = (a.nIn * W) / 2;
+        const p1 = Sim.pointAt(a.entryPath, a.approachLength, -half + 0.2);
+        const p2 = Sim.pointAt(a.entryPath, a.approachLength, half - 0.2);
+        ctx.strokeStyle = signal === null ? '#ffffff' : COLORS[signal];
+        ctx.lineWidth = Math.max(2, 0.6 * scale);
+        ctx.setLineDash(signal === null ? [4, 3] : []);
+        ctx.beginPath();
+        ctx.moveTo(X(p1.x), Y(p1.y));
+        ctx.lineTo(X(p2.x), Y(p2.y));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        if (signal !== null) {
+          const s = Sim.pointAt(a.entryPath, a.approachLength - 2, half + 2.5);
+          dot(X(s.x), Y(s.y), 7, '#111');
+          dot(X(s.x), Y(s.y), 5, COLORS[signal]);
+        }
+      }
+
+      // ---------- Vehicles ----------
+      // At the default zoom vehicles are only a few pixels long, so they are drawn slightly larger
+      // than real size (never more than the free space a queue leaves between them).
+      const now = performance.now() / 1000;
+      const boost = scale < 6 ? Math.min(1.35, 1 + (6 - scale) * 0.08) : 1;
+      const blink = Math.floor(now * 2.5) % 2 === 0;
+      const alerts = [];
       for (const v of e.vehicles) {
         if (v.zone === 'pending' || v.zone === 'gone') continue;
         const p = Sim.vehiclePosition(geo, v);
         if (!p) continue;
-        ctx.save();
-        ctx.translate(X(p.x), Y(p.y));
-        ctx.rotate(-p.angle);
-        const l = v.length * scale;
-        const wd = Math.max(2, v.props.width * scale);
-        ctx.fillStyle = COLORS[v.type];
-        ctx.fillRect(-l / 2, -wd / 2, l, wd);
+        const prev = lastSpeed.get(v);
+        lastSpeed.set(v, v.speed);
+        const braking = v.speed < 0.3 || (prev !== undefined && v.speed < prev - 0.02);
+        const blinkRight = blink && v.zone === 'ring' && v.remaining < 30;
+        const motoBoost = v.type === 'motorcycle' && scale < 6 ? 1.3 : 1; // motorcycles are tiny at the default zoom
+        const L = Math.max(5, v.length * scale * boost * motoBoost);
+        const Wd = Math.max(3, v.props.width * scale * boost * (v.type === 'motorcycle' ? 1.25 : 1.1));
+        const sx = X(p.x);
+        const sy = Y(p.y);
         if (v.blocking) {
+          const pulse = (Math.sin(now * 6) + 1) / 2;
+          const rad = Math.max(L, Wd) * 0.7 + 4 + pulse * 5;
+          ctx.fillStyle = `rgba(239,68,68,${0.18 + pulse * 0.15})`;
+          ctx.beginPath();
+          ctx.arc(sx, sy, rad, 0, Math.PI * 2);
+          ctx.fill();
           ctx.strokeStyle = COLORS.blocking;
-          ctx.lineWidth = 2.5;
-          ctx.strokeRect(-l / 2 - 1.5, -wd / 2 - 1.5, l + 3, wd + 3);
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          alerts.push([sx, sy - rad - 9]);
         }
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(-p.angle);
+        Sim.drawVehicleIcon(ctx, v, L, Wd, { braking, blinkRight });
         ctx.restore();
       }
+      // "!" badges above stuck vehicles
+      for (const [ax, ay] of alerts) {
+        ctx.fillStyle = COLORS.blocking;
+        ctx.beginPath();
+        ctx.arc(ax, ay, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = '#fff';
+        ctx.font = '700 11px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('!', ax, ay + 0.5);
+      }
 
-      // Road names and queue per approach
+      // ---------- Bridges on top (the Troncal passes over La Lucha) ----------
+      for (const c of geo.context) {
+        if (c.kind !== 'bridge') continue;
+        strokePath(c.path, c.lanes * W + 1, 'rgba(255,255,255,0.35)');
+        strokePath(c.path, c.lanes * W, COLORS.bridge);
+      }
+
+      // ---------- Labels ----------
       ctx.font = '600 12px system-ui, sans-serif';
-      ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       for (const a of geo.approaches) {
-        const rLabel = Math.min(rEnd(a), extent) - 8;
-        const [tx, ty] = P(a, rLabel, 0);
-        const queue = e.metrics.queueNow[a.id];
-        const outside = e.approaches[a.id].pending.length;
-        label(a.name, tx, ty, 'rgba(255,255,255,0.92)', COLORS.text);
-        const [qx, qy] = P(a, rLabel - 10, a.nIn * geo.W + 7);
-        const text = outside ? `cola ${queue} (+${outside} fuera del tramo)` : `cola ${queue}`;
-        label(text, qx, qy, queue > 15 ? '#fee2e2' : 'rgba(255,255,255,0.85)', queue > 15 ? '#991b1b' : COLORS.text);
+        if (a.hasEntry) {
+          const p = Sim.pointAt(a.entryPath, Math.max(0, a.approachLength - 75), (a.nIn * W) / 2 + 6);
+          const queue = e.metrics.queueNow[a.id];
+          const outside = e.approaches[a.id].pending.length;
+          // name and queue move together, kept below the toolbars and above the legend
+          const yBase = Math.max(74, Math.min(h - 58, Y(p.y)));
+          label(a.name, X(p.x), yBase - 11, 'rgba(255,255,255,0.93)', COLORS.text);
+          const text = outside ? `cola ${queue} (+${outside} fuera)` : `cola ${queue}`;
+          label(text, X(p.x), yBase + 11, queue > 15 ? '#fee2e2' : 'rgba(255,255,255,0.85)', queue > 15 ? '#991b1b' : COLORS.text);
+        } else if (a.hasExit) {
+          const p = Sim.pointAt(a.exitPath, Math.min(a.exitPath.length, 45), (a.nOut * W) / 2 + 5);
+          label(`${a.name} · solo salida`, X(p.x), Y(p.y), 'rgba(255,255,255,0.93)', COLORS.text);
+        }
       }
 
-      // Header labels
-      ctx.textAlign = 'left';
+      // ---------- Overlays ----------
       ctx.font = '600 13px system-ui, sans-serif';
-      const min = Math.floor(e.t / 60);
-      const sec = Math.floor(e.t % 60);
-      label(`${Sim.MODES[e.cfg.mode]}  ·  t = ${min}:${String(sec).padStart(2, '0')}`, 12, 18, 'rgba(255,255,255,0.92)', COLORS.text, 'left');
       const blocking = e.ring.filter((v) => v.blocking).length;
-      if (blocking) label(`⚠ ${blocking} vehículo(s) atravesado(s) bloqueando el anillo`, 12, h - 42, '#fee2e2', '#991b1b', 'left');
-      if (e.cfg.mode !== 'current') {
-        const left = Math.max(0, e.control.currentPhaseDuration() - e.control.time);
-        const PHASE_NAMES = { green: 'verde', yellow: 'amarillo', all_red: e.cfg.mode === 'officer' ? 'transición' : 'todo rojo' };
-        const who = e.control.phase === 'all_red' ? '' : ` → ${e.control.phases[e.control.index].join(' + ')}`;
-        label(`${PHASE_NAMES[e.control.phase]}${who} · ${left.toFixed(0)} s`, w - 12, 18, 'rgba(255,255,255,0.92)', COLORS.text, 'right');
-      }
+      if (blocking) label(`⚠ ${blocking} vehículo(s) atravesado(s) bloqueando el anillo`, 12, h - 44, '#fee2e2', '#991b1b', 'left');
 
       // Scale bar
-      const meters = 20;
+      const meters = scale > 4 ? 20 : 50;
       ctx.strokeStyle = COLORS.text;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(12, h - 14);
-      ctx.lineTo(12 + meters * scale, h - 14);
+      ctx.moveTo(12, h - 16);
+      ctx.lineTo(12 + meters * scale, h - 16);
       ctx.stroke();
       ctx.fillStyle = COLORS.text;
       ctx.font = '11px system-ui, sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`${meters} m`, 16 + meters * scale, h - 14);
+      ctx.fillText(`${meters} m`, 16 + meters * scale, h - 16);
+      if (showTiles) {
+        const att = '© OpenStreetMap contributors © CARTO';
+        const ax = 70 + meters * scale;
+        ctx.fillStyle = 'rgba(255,255,255,0.85)';
+        ctx.fillRect(ax - 4, h - 24, ctx.measureText(att).width + 8, 16);
+        ctx.fillStyle = COLORS.text;
+        ctx.fillText(att, ax, h - 16);
+      }
 
-      function polygon(pts) {
-        ctx.beginPath();
-        ctx.moveTo(pts[0][0], pts[0][1]);
-        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-        ctx.closePath();
-        ctx.fill();
+      // ---------- Helpers ----------
+      function polyPath(pts, closed) {
+        ctx.moveTo(X(pts[0][0]), Y(pts[0][1]));
+        for (let i = 1; i < pts.length; i++) ctx.lineTo(X(pts[i][0]), Y(pts[i][1]));
+        if (closed) ctx.closePath();
       }
-      function circle(x, y, r, color) {
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.arc(X(x), Y(y), r * scale, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      function line(p1, p2, color, width, dashes) {
+      function strokePath(pts, widthM, color, dashes) {
         ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.setLineDash(dashes);
+        ctx.lineWidth = dashes ? widthM : Math.max(1, widthM * scale);
+        ctx.lineJoin = 'round';
+        ctx.lineCap = dashes ? 'butt' : 'round';
+        ctx.setLineDash(dashes || []);
         ctx.beginPath();
-        ctx.moveTo(p1[0], p1[1]);
-        ctx.lineTo(p2[0], p2[1]);
+        polyPath(pts, false);
         ctx.stroke();
         ctx.setLineDash([]);
       }
+      function fillPolygon(pts, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        polyPath(pts, true);
+        ctx.fill();
+      }
+      function dot(x, y, r, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Labels are kept inside the canvas so road names are never cut off at the edges.
       function label(text, x, y, bg, color, align = 'center') {
-        ctx.textAlign = align;
         const width = ctx.measureText(text).width + 12;
-        const x0 = align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
+        let x0 = align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
+        x0 = Math.max(6, Math.min(w - width - 6, x0));
+        const yc = align === 'center' ? Math.max(62, Math.min(h - 46, y)) : y; // never under the toolbars
         ctx.fillStyle = bg;
         ctx.beginPath();
-        ctx.roundRect(x0, y - 10, width, 20, 6);
+        ctx.roundRect(x0, yc - 10, width, 20, 6);
         ctx.fill();
         ctx.fillStyle = color;
-        ctx.fillText(text, align === 'center' ? x : align === 'right' ? x - 6 : x + 6, y + 0.5);
+        ctx.textAlign = 'left';
+        ctx.fillText(text, x0 + 6, yc + 0.5);
       }
     }
 
-    return { draw };
+    // Draws map tiles aligned with the local meter coordinates (same projection as tools/build-geometry.js).
+    function drawTiles(geo, w, h, dpr, scale, X, Y) {
+      const { lat: lat0, lon: lon0 } = geo.center;
+      const kx = 111320 * Math.cos((lat0 * Math.PI) / 180);
+      const ky = 110574;
+      const z = Math.max(14, Math.min(19, Math.ceil(Math.log2(156543.03 * Math.cos((lat0 * Math.PI) / 180) * scale * Math.min(dpr, 2)))));
+      // visible area in meters -> lat/lon -> tile range
+      const xm = (px) => view.centerX + (px - w / 2 - view.panX) / scale;
+      const ym = (py) => view.centerY - (py - h / 2 - view.panY) / scale;
+      const lonL = lon0 + xm(0) / kx;
+      const lonR = lon0 + xm(w) / kx;
+      const latT = lat0 + ym(0) / ky;
+      const latB = lat0 + ym(h) / ky;
+      const x0 = Math.floor(lon2tile(lonL, z));
+      const x1 = Math.floor(lon2tile(lonR, z));
+      const y0 = Math.floor(lat2tile(latT, z));
+      const y1 = Math.floor(lat2tile(latB, z));
+      let loaded = 0;
+      let failed = 0;
+      for (let tx = x0; tx <= x1; tx++) {
+        for (let ty = y0; ty <= y1; ty++) {
+          const key = `${z}/${tx}/${ty}`;
+          let t = tiles.get(key);
+          if (!t) {
+            const img = new Image();
+            t = { img, ok: false, failed: false };
+            img.onload = () => (t.ok = true);
+            img.onerror = () => (t.failed = true);
+            img.src = TILE_URL.replace('{s}', 'abcd'[(tx + ty) % 4]).replace('{z}', z).replace('{x}', tx).replace('{y}', ty);
+            tiles.set(key, t);
+          }
+          if (t.failed) failed++;
+          if (!t.ok) continue;
+          loaded++;
+          const left = X((tile2lon(tx, z) - lon0) * kx);
+          const right = X((tile2lon(tx + 1, z) - lon0) * kx);
+          const top = Y((tile2lat(ty, z) - lat0) * ky);
+          const bottom = Y((tile2lat(ty + 1, z) - lat0) * ky);
+          ctx.drawImage(t.img, left, top, right - left + 0.5, bottom - top + 0.5);
+        }
+      }
+      renderer.tilesStatus = loaded ? 'ok' : failed ? 'failed' : 'loading';
+    }
+
+    renderer.draw = draw;
+    return renderer;
   };
 })();

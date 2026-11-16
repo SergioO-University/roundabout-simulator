@@ -23,11 +23,13 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
   };
 
   // Picks the exit the vehicle will take according to the 'turning' shares.
+  // ids = approaches that have an exit.
   function pickDestination(turning, origin, ids, u) {
     const table = turning && turning[origin];
     if (!table) {
       const others = ids.filter((i) => i !== origin);
-      return others[Math.min(others.length - 1, Math.floor(u * others.length))];
+      const pool = others.length ? others : ids;
+      return pool[Math.min(pool.length - 1, Math.floor(u * pool.length))];
     }
     let total = 0;
     for (const id of ids) total += table[id] || 0;
@@ -48,7 +50,8 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
   // "poisson" mode: random arrivals at the counted rate (the total varies a little).
   Sim.generateArrivals = function ({ profile, turning, geo, duration, seed, mode }) {
     const rnd = Sim.mulberry32(seed);
-    const ids = geo.approaches.map((a) => a.id);
+    const entryIds = geo.entryIds;
+    const exitIds = geo.exitIds;
     const list = [];
     const blocks = Math.ceil(duration / BLOCK_S);
 
@@ -57,14 +60,14 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         t: Math.round(t * 10) / 10, // aligned with the 0.1 s step
         approach,
         type,
-        destination: pickDestination(turning, approach, ids, rnd()),
+        destination: pickDestination(turning, approach, exitIds, rnd()),
         aggressiveness: rnd(),
       };
     }
 
     for (let b = 0; b < blocks; b++) {
       const start = b * BLOCK_S;
-      for (const id of ids) {
+      for (const id of entryIds) {
         const count = profile.approaches[id] || {};
         for (const type of TYPES) {
           const n = count[type] || 0;
@@ -141,6 +144,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       e.metrics.arrival(v);
     }
     for (const ap of e.geo.approaches) {
+      if (!ap.hasEntry) continue;
       const s = e.approaches[ap.id];
       while (s.pending.length) {
         const v = s.pending[0];

@@ -20,6 +20,31 @@ Después de editar cualquier `.json`, regenerar la copia para el modo sin intern
 node tools/embed-data.js
 ```
 
+## Geometría real (OpenStreetMap)
+
+Las tres glorietas se dibujan y se simulan con su **forma real**, tomada de OpenStreetMap (© colaboradores de OpenStreetMap, licencia ODbL):
+
+| Punto | Nombre en OpenStreetMap | Brazos |
+|---|---|---|
+| La Lucha | Rotonda de La Lucha (la Troncal pasa por encima en puente) | Av. del Ferrocarril, Calle 31 (sur), Calle 31 (oriente), Conector Troncal (nororiente) y Salida a Troncal hacia Ciénaga (solo salida) |
+| Mamatoco | Rotonda Mamatoco | Troncal del Caribe (oriente y occidente), Vía Alterna al Puerto, Av. Calle 29 |
+| La Piragua | Rotonda José Benito Barrios | Troncal (hacia Mamatoco y hacia La Lucha), Av. del Libertador, Carrera 35 |
+
+Los vehículos recorren las trayectorias reales de cada entrada y salida y la forma real del anillo. Algunos brazos son **solo de salida**.
+
+Cómo se genera:
+
+1. `data/osm/*.json` tiene las vías descargadas de OpenStreetMap alrededor de cada glorieta.
+2. `data/osm/sites.json` dice qué vías forman la entrada y la salida de cada brazo, cuántos carriles tiene y su capacidad de salida. **Aquí se corrigen los nombres, carriles y capacidades con lo visto en campo.**
+3. `node tools/build-geometry.js` genera `data/geometry.json` (no editarlo a mano: se sobrescribe).
+4. `node tools/embed-data.js` actualiza la copia para usar sin internet.
+
+⚠ La Piragua está en obra (intercambiador en construcción desde 2026); OpenStreetMap puede mostrar la forma anterior.
+
+**En pantalla:** la rueda del mouse hace zoom y arrastrar mueve la vista; "Encuadrar" vuelve a la vista inicial.
+Con internet se puede activar **Mapa de fondo** (teselas de CARTO / OpenStreetMap) para ver la glorieta sobre el mapa.
+Sin internet el simulador funciona igual, solo sin el mapa de fondo.
+
 ## Qué hace
 
 Modela **una** glorieta con su geometría y la opera de tres formas, siempre con **las mismas llegadas**
@@ -32,6 +57,8 @@ Modela **una** glorieta con su geometría y la opera de tres formas, siempre con
 | **Agente** (`officer`, la "alternativa") | Turnos fijos de un agente de tránsito, un acceso a la vez, con tiempo de transición. Opcionalmente, el agente no deja entrar a quien no tiene espacio en su salida. |
 
 Las motos son más cortas, aceleran más y **filtran entre las filas** detenidas. Los carros y las busetas no filtran.
+
+En pantalla cada vehículo se dibuja con un ícono visto desde arriba. Las **luces de freno** se encienden cuando frena o está detenido, la **direccional naranja** parpadea cuando va a tomar su salida, y un **círculo rojo con "!"** marca a los vehículos atravesados que bloquean el anillo.
 
 La interfaz y la documentación están en español. El código (archivos, variables, comentarios y claves de los JSON) está en inglés.
 
@@ -58,16 +85,20 @@ El documento del reto sugiere nombres en español; esta tabla muestra a qué arc
 | `js/control.js` | `control.js` | Quién puede entrar según el modo: prelación, fases del semáforo o turnos del agente. |
 | `js/vehicles.js` | `vehiculos.js` | Avance de cada vehículo, regla de frenado, entrada al anillo, filtrado de motos. |
 | `js/metrics.js` | `metricas.js` | Evacuación, colas, esperas, bloqueos y verificación de verdes en conflicto. |
-| `js/renderer.js` | `dibujo.js` | Dibuja vías, anillo, señales y vehículos. |
-| `js/geometry.js` | — | Convierte `geometry.json` en medidas: puntos de entrada y salida del anillo. |
+| `js/renderer.js` | `dibujo.js` | Dibuja vías reales, anillo, puentes, señales, vehículos y el mapa de fondo opcional; zoom y desplazamiento. |
+| `js/geometry.js` | — | Convierte `geometry.json` en trayectorias: anillo, entradas y salidas con su forma real. |
+| `js/icons.js` | — | Íconos de los vehículos vistos desde arriba (moto con piloto, carro o taxi, buseta), con luces de freno y direccional. |
 | `js/data.js` | — | Carga los `.json` (o la copia embebida si no hay servidor). |
 | `js/app.js` | — | Conecta los botones y el tablero con el motor. |
-| `data/geometry.json` | `geometria.json` | Radio, carriles, ángulo y largo de cada acceso, capacidad de las salidas, fases del semáforo. |
+| `data/geometry.json` | `geometria.json` | Forma del anillo y de cada entrada y salida (generado desde OpenStreetMap), carriles, capacidad de las salidas. |
+| `data/osm/sites.json` | — | Qué vías de OpenStreetMap forman cada brazo, nombres, carriles y capacidades (editable). |
+| `data/osm/*.json` | — | Vías descargadas de OpenStreetMap. |
 | `data/counts.json` | `conteos.json` | Conteos de 15 min por acceso y tipo (pico y valle) y proporción de giros. |
 | `data/parameters.json` | `parametros.json` | Velocidad, largo, aceleración y brecha de cada tipo; tiempos del semáforo y del agente; semilla. |
 | `data/embedded-data.js` | — | Copia generada de los tres `.json` para usar sin internet. |
 | `tests/engine.test.js` | — | Pruebas automáticas del motor. |
 | `tools/embed-data.js` | — | Regenera `data/embedded-data.js`. |
+| `tools/build-geometry.js` | — | Genera `data/geometry.json` desde OpenStreetMap y `data/osm/sites.json`. |
 | `docs/` | `documentos/` | PDF de la entrega. |
 
 ### Equivalencias en los datos
@@ -76,7 +107,7 @@ El documento del reto sugiere nombres en español; esta tabla muestra a qué arc
 |---|---|
 | `current` / `signal` / `officer` | Modo actual / semáforo / agente |
 | `peak` / `offpeak` / `test` | Perfil pico / valle / caso de prueba |
-| `north` / `east` / `south` / `west` | Acceso norte / oriente / sur / occidente |
+| `ferrocarril`, `calle31_sur`, `troncal_oriente`, … | Identificador de cada brazo (ver `data/osm/sites.json`) |
 | `motorcycle` / `car` / `bus` | Moto / carro / buseta |
 | `approaching` / `queued` / `crossing` / `exited` | Estado aproximando / en cola / cruzando / salió |
 | `turning` | Proporción de giros de cada acceso hacia cada salida |
@@ -101,8 +132,9 @@ muestra también "vehículos aún en cola al final".
 
 ## Simplificaciones del modelo
 
-- Cada acceso se modela con **un carril lógico** más un carril de filtrado para motos. El dibujo muestra los carriles reales.
-- El anillo se modela con **un carril lógico** de circulación.
+- Cada acceso se modela con **un carril lógico** más un carril de filtrado para motos. El dibujo muestra el ancho real según el número de carriles.
+- El anillo se modela con **un carril lógico** que sigue la línea central real del anillo.
+- Se modelan unos 130 m de cada entrada y 90 m de cada salida.
 - La **capacidad de salida** (`exit_capacity_vph`) representa un trancón aguas abajo. Si una salida se llena, el vehículo
   que va hacia ella se queda quieto en el anillo y bloquea a los demás. Este valor se calibra con los bloqueos observados en campo.
 - Las llegadas usan `arrival_mode: "exact_count"`: en cada bloque de 15 min llegan exactamente los vehículos contados,
@@ -119,11 +151,11 @@ que ningún vehículo se monte sobre otro, que nunca haya verdes en conflicto, y
 
 ## Pendiente con los datos reales
 
-- [ ] Elegir **un** punto (recomendado: La Lucha) y dejarlo en `active_site`.
-- [ ] Croquis → `geometry.json`: ángulos, carriles, radio, largos, nombres reales de las vías, coordenadas GPS.
+- [ ] Elegir **un** punto (recomendado: La Lucha) y dejarlo en `active_site` de `data/osm/sites.json`.
+- [ ] Croquis → revisar en `data/osm/sites.json` que los brazos, nombres y carriles coincidan con lo visto en campo; regenerar con `node tools/build-geometry.js`.
 - [ ] Conteos pico y valle → `counts.json` (quitar `"is_test_data": true`).
 - [ ] Giros estimados del video → `turning`.
-- [ ] Bloqueos observados → ajustar `exit_capacity_vph` hasta que el modo Actual reproduzca lo visto.
+- [ ] Bloqueos observados → ajustar `exit_capacity_vph` (en `data/osm/sites.json`) hasta que el modo Actual reproduzca lo visto.
 - [ ] Revisar y justificar `parameters.json`, y observar si el agente da paso a dos accesos a la vez (`officer.groups`).
-- [ ] `node tools/embed-data.js` y `node tests/engine.test.js`.
+- [ ] `node tools/build-geometry.js`, `node tools/embed-data.js` y `node tests/engine.test.js`.
 - [ ] Comparación final y conclusión con cifras en la bitácora.
