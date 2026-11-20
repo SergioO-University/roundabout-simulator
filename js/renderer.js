@@ -3,7 +3,7 @@
 // It never changes the state: if drawing fails, the results are not affected.
 // Roads are drawn from their real OpenStreetMap shapes. With internet, an optional map
 // background (CARTO Voyager tiles, © OpenStreetMap contributors © CARTO) is drawn underneath.
-// Mouse wheel zooms, dragging pans. On-screen text is in Spanish.
+// Mouse wheel or pinch zooms, dragging pans. On-screen text is in Spanish.
 var Sim = globalThis.Sim || (globalThis.Sim = {});
 
 (function () {
@@ -38,35 +38,80 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
     return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
   };
 
+  // Older iPhones (Safari before 16.4) have no roundRect: without it nothing would be drawn.
+  if (typeof CanvasRenderingContext2D !== 'undefined' && !CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+      const rr = Math.max(0, Math.min(typeof r === 'number' ? r : 0, w / 2, h / 2));
+      this.moveTo(x + rr, y);
+      this.arcTo(x + w, y, x + w, y + h, rr);
+      this.arcTo(x + w, y + h, x, y + h, rr);
+      this.arcTo(x, y + h, x, y, rr);
+      this.arcTo(x, y, x + w, y, rr);
+      this.closePath();
+    };
+  }
+
   Sim.createRenderer = function (canvas) {
     let ctx = canvas.getContext('2d');
     let layer = null;
     const lastSpeed = new WeakMap(); // previous drawn speed of each vehicle, to light up brake lights
     const view = { zoom: 1, panX: 0, panY: 0, fitFor: null, baseScale: 1, centerX: 0, centerY: 0 };
     const tiles = new Map();
-    const renderer = { mapTiles: false, tilesStatus: 'off' };
+    // insets: room taken by the toolbars (top) and the legend (bottom) when they float over the canvas.
+    const renderer = { mapTiles: false, tilesStatus: 'off', insets: { top: 62, bottom: 46 } };
 
     // ---------- Pan and zoom ----------
     let drag = null;
-    canvas.addEventListener('wheel', (ev) => {
-      ev.preventDefault();
+    // One pointer (mouse or finger) pans; two fingers pinch to zoom.
+    const pointers = new Map();
+    let pinch = null;
+    canvas.style.touchAction = 'none';
+    function zoomAt(clientX, clientY, newZoom) {
       const r = canvas.getBoundingClientRect();
-      const mx = ev.clientX - r.left - r.width / 2 - view.panX;
-      const my = ev.clientY - r.top - r.height / 2 - view.panY;
-      const factor = Math.exp(-ev.deltaY * 0.0015);
-      const newZoom = Math.min(8, Math.max(0.4, view.zoom * factor));
+      const mx = clientX - r.left - r.width / 2 - view.panX;
+      const my = clientY - r.top - r.height / 2 - view.panY;
+      newZoom = Math.min(8, Math.max(0.4, newZoom));
       const k = newZoom / view.zoom;
       view.panX -= mx * (k - 1);
       view.panY -= my * (k - 1);
       view.zoom = newZoom;
-    }, { passive: false });
-    canvas.addEventListener('mousedown', (ev) => (drag = { x: ev.clientX, y: ev.clientY, panX: view.panX, panY: view.panY }));
-    window.addEventListener('mousemove', (ev) => {
-      if (!drag) return;
-      view.panX = drag.panX + ev.clientX - drag.x;
-      view.panY = drag.panY + ev.clientY - drag.y;
+    }
+    canvas.addEventListener('pointerdown', (ev) => {
+      canvas.setPointerCapture(ev.pointerId);
+      pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (pointers.size === 1) drag = { x: ev.clientX, y: ev.clientY, panX: view.panX, panY: view.panY };
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom: view.zoom };
+        drag = null;
+      }
     });
-    window.addEventListener('mouseup', () => (drag = null));
+    canvas.addEventListener('pointermove', (ev) => {
+      if (!pointers.has(ev.pointerId)) return;
+      pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (pinch && pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const dist = Math.hypot(a.x - b.x, a.y - b.y);
+        zoomAt((a.x + b.x) / 2, (a.y + b.y) / 2, pinch.zoom * (dist / (pinch.dist || 1)));
+      } else if (drag) {
+        view.panX = drag.panX + ev.clientX - drag.x;
+        view.panY = drag.panY + ev.clientY - drag.y;
+      }
+    });
+    const release = (ev) => {
+      pointers.delete(ev.pointerId);
+      if (pointers.size < 2) pinch = null;
+      if (pointers.size === 1) {
+        const [p] = [...pointers.values()];
+        drag = { x: p.x, y: p.y, panX: view.panX, panY: view.panY };
+      } else drag = null;
+    };
+    canvas.addEventListener('pointerup', release);
+    canvas.addEventListener('pointercancel', release);
+    canvas.addEventListener('wheel', (ev) => {
+      ev.preventDefault();
+      zoomAt(ev.clientX, ev.clientY, view.zoom * Math.exp(-ev.deltaY * 0.0015));
+    }, { passive: false });
 
     renderer.resetView = function () {
       view.zoom = 1;
@@ -111,13 +156,18 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       if (!e) return;
       const geo = e.geo;
 
+      // The fit follows the canvas size (window resize, phone rotation); zoom and pan reset only for a new site.
       if (view.fitFor !== geo) {
-        const b = fitBounds(geo);
-        view.baseScale = Math.min((w - 40) / (b.maxX - b.minX), (h - 70) / (b.maxY - b.minY));
-        view.centerX = (b.minX + b.maxX) / 2;
-        view.centerY = (b.minY + b.maxY) / 2;
+        view.bounds = fitBounds(geo);
         view.fitFor = geo;
         renderer.resetView();
+      }
+      {
+        const b = view.bounds;
+        const ins = renderer.insets;
+        view.baseScale = Math.min((w - 40) / (b.maxX - b.minX), (h - 24 - (ins.top + ins.bottom) / 2) / (b.maxY - b.minY));
+        view.centerX = (b.minX + b.maxX) / 2;
+        view.centerY = (b.minY + b.maxY) / 2;
       }
       const scale = view.baseScale * view.zoom;
       const cx = w / 2 + view.panX;
@@ -269,7 +319,8 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       }
 
       // ---------- Labels ----------
-      ctx.font = '600 12px system-ui, sans-serif';
+      const small = w < 560; // phones: smaller labels so road names do not cover the roundabout
+      ctx.font = small ? '600 10.5px system-ui, sans-serif' : '600 12px system-ui, sans-serif';
       ctx.textBaseline = 'middle';
       for (const a of geo.approaches) {
         if (a.hasEntry) {
@@ -277,10 +328,10 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
           const queue = e.metrics.queueNow[a.id];
           const outside = e.approaches[a.id].pending.length;
           // name and queue move together, kept below the toolbars and above the legend
-          const yBase = Math.max(74, Math.min(h - 58, Y(p.y)));
-          label(a.name, X(p.x), yBase - 11, 'rgba(255,255,255,0.93)', COLORS.text);
+          const yBase = Math.max(renderer.insets.top + 12, Math.min(h - renderer.insets.bottom - 12, Y(p.y)));
+          label(a.name, X(p.x), yBase - (small ? 9 : 11), 'rgba(255,255,255,0.93)', COLORS.text);
           const text = outside ? `cola ${queue} (+${outside} fuera)` : `cola ${queue}`;
-          label(text, X(p.x), yBase + 11, queue > 15 ? '#fee2e2' : 'rgba(255,255,255,0.85)', queue > 15 ? '#991b1b' : COLORS.text);
+          label(text, X(p.x), yBase + (small ? 9 : 11), queue > 15 ? '#fee2e2' : 'rgba(255,255,255,0.85)', queue > 15 ? '#991b1b' : COLORS.text);
         } else if (a.hasExit) {
           const p = Sim.pointAt(a.exitPath, Math.min(a.exitPath.length, 45), (a.nOut * W) / 2 + 5);
           label(`${a.name} · solo salida`, X(p.x), Y(p.y), 'rgba(255,255,255,0.93)', COLORS.text);
@@ -344,17 +395,19 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       }
       // Labels are kept inside the canvas so road names are never cut off at the edges.
       function label(text, x, y, bg, color, align = 'center') {
-        const width = ctx.measureText(text).width + 12;
+        const pad = small ? 8 : 12;
+        const width = ctx.measureText(text).width + pad;
         let x0 = align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
         x0 = Math.max(6, Math.min(w - width - 6, x0));
-        const yc = align === 'center' ? Math.max(62, Math.min(h - 46, y)) : y; // never under the toolbars
+        const yc = align === 'center' ? Math.max(renderer.insets.top, Math.min(h - renderer.insets.bottom, y)) : y; // never under the toolbars
         ctx.fillStyle = bg;
         ctx.beginPath();
-        ctx.roundRect(x0, yc - 10, width, 20, 6);
+        const lh = small ? 17 : 20;
+        ctx.roundRect(x0, yc - lh / 2, width, lh, 6);
         ctx.fill();
         ctx.fillStyle = color;
         ctx.textAlign = 'left';
-        ctx.fillText(text, x0 + 6, yc + 0.5);
+        ctx.fillText(text, x0 + pad / 2, yc + 0.5);
       }
     }
 

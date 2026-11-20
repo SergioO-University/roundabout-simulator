@@ -21,7 +21,9 @@
     <main class="layout">
       <section class="stage">
         <div class="scene">
-          <canvas id="canvas" aria-label="Dibujo de la glorieta y los vehículos"></canvas>
+          <div class="canvas-wrap">
+            <canvas id="canvas" aria-label="Dibujo de la glorieta y los vehículos"></canvas>
+          </div>
 
           <div class="toolbar">
             <button id="btn-play" class="primary">▶ Iniciar</button>
@@ -47,7 +49,7 @@
             <span><svg viewBox="0 0 16 14" class="icon"><circle cx="8" cy="7" r="6" fill="rgba(239,68,68,.25)" stroke="#ef4444" stroke-width="1.6"/></svg>Atravesado</span>
             <span><svg viewBox="0 0 10 10" class="icon small"><rect x="1" y="2" width="8" height="6" rx="1" fill="#ff2a2a"/></svg>Frenando</span>
             <span><svg viewBox="0 0 10 10" class="icon small"><rect x="1" y="2" width="8" height="6" rx="1" fill="#fb923c"/></svg>Va a salir</span>
-            <span class="hint">Rueda: zoom · arrastrar: mover</span>
+            <span class="hint">Rueda o pellizco: zoom · arrastrar: mover</span>
           </div>
         </div>
 

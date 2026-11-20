@@ -15,6 +15,13 @@
   const params = data.parameters;
   const engine = Sim.createEngine(data);
   const renderer = Sim.createRenderer($('canvas'));
+  // On phones the toolbars and legend sit outside the canvas, so labels can use its whole height.
+  const phone = window.matchMedia('(max-width: 900px)');
+  const setInsets = () => {
+    renderer.insets = phone.matches ? { top: 14, bottom: 30 } : { top: 62, bottom: 46 };
+  };
+  phone.addEventListener('change', setInsets);
+  setInsets();
 
   const MODE_DESCRIPTIONS = {
     current: 'Cada conductor entra cuando ve un hueco en el anillo. Nadie revisa si su salida está libre: un vehículo puede quedar atravesado y bloquear a todos.',

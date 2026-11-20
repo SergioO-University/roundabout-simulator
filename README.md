@@ -41,9 +41,19 @@ Cómo se genera:
 
 ⚠ La Piragua está en obra (intercambiador en construcción desde 2026); OpenStreetMap puede mostrar la forma anterior.
 
-**En pantalla:** la rueda del mouse hace zoom y arrastrar mueve la vista; "Encuadrar" vuelve a la vista inicial.
+**En pantalla:** la rueda del mouse (o pellizcar en el teléfono) hace zoom y arrastrar mueve la vista; "Encuadrar" vuelve a la vista inicial. En teléfonos el diseño pasa a una sola columna con scroll.
 Con internet se puede activar **Mapa de fondo** (teselas de CARTO / OpenStreetMap) para ver la glorieta sobre el mapa.
 Sin internet el simulador funciona igual, solo sin el mapa de fondo.
+
+## Cargar los datos de campo
+
+Todo el equipo llena la misma **Planilla de campo** (hoja de cálculo con pestañas Conteos, Giros, Bloqueos, Tiempos, Brazos y Fallos IA). Después:
+
+1. Descargarla como Excel y guardarla como `data/field/planilla-campo.xlsx`.
+2. `node tools/import-field-data.js` — revisa errores y escribe `data/counts.json` (conteos, giros y bloqueos). También imprime las velocidades promedio medidas y las diferencias de carriles o nombres con `data/osm/sites.json`, para corregirlas a mano.
+3. `node tools/embed-data.js` y `node tests/engine.test.js`.
+
+Con `--dry-run` revisa la planilla sin escribir nada.
 
 ## Qué hace
 
@@ -98,6 +108,8 @@ El documento del reto sugiere nombres en español; esta tabla muestra a qué arc
 | `data/embedded-data.js` | — | Copia generada de los tres `.json` para usar sin internet. |
 | `tests/engine.test.js` | — | Pruebas automáticas del motor. |
 | `tools/embed-data.js` | — | Regenera `data/embedded-data.js`. |
+| `tools/import-field-data.js` | — | Importa la planilla de campo (.xlsx) a `data/counts.json`. |
+| `data/field/` | — | Aquí va `planilla-campo.xlsx`. |
 | `tools/build-geometry.js` | — | Genera `data/geometry.json` desde OpenStreetMap y `data/osm/sites.json`. |
 | `docs/` | `documentos/` | PDF de la entrega. |
 
@@ -153,8 +165,7 @@ que ningún vehículo se monte sobre otro, que nunca haya verdes en conflicto, y
 
 - [ ] Elegir **un** punto (recomendado: La Lucha) y dejarlo en `active_site` de `data/osm/sites.json`.
 - [ ] Croquis → revisar en `data/osm/sites.json` que los brazos, nombres y carriles coincidan con lo visto en campo; regenerar con `node tools/build-geometry.js`.
-- [ ] Conteos pico y valle → `counts.json` (quitar `"is_test_data": true`).
-- [ ] Giros estimados del video → `turning`.
+- [ ] Llenar la planilla de campo e importarla con `node tools/import-field-data.js` (conteos, giros y bloqueos).
 - [ ] Bloqueos observados → ajustar `exit_capacity_vph` (en `data/osm/sites.json`) hasta que el modo Actual reproduzca lo visto.
 - [ ] Revisar y justificar `parameters.json`, y observar si el agente da paso a dos accesos a la vez (`officer.groups`).
 - [ ] `node tools/build-geometry.js`, `node tools/embed-data.js` y `node tests/engine.test.js`.
