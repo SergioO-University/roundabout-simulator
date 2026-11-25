@@ -52,7 +52,9 @@ Todo es opcional salvo `profiles`; pongan `null` en lo que no midieron.
 | `observed_entry_headway_s` | `approach`, `profile`, `median` (tiempo mediano entre vehículos que entran, en s) y `queue_discharge_p15` (percentil 15 cuando hay cola). |
 | `observed_blockages` | Bloqueos vistos (ver `data/field/instrucciones-para-ia.md`). |
 
-**Desvío de la Av. del Ferrocarril:** quienes van de la Ferrocarril hacia la Troncal (Ciénaga) toman un desvío y no entran al anillo. El conteo de `ferrocarril` debe incluirlos, y el giro `ferrocarril → troncal_cienaga` es cuántos tomaron el desvío.
+**Desvíos de La Lucha** (no entran al anillo):
+- **Ferrocarril → Troncal (Ciénaga):** el conteo de `ferrocarril` los incluye, y el giro `ferrocarril → troncal_cienaga` es cuántos tomaron el desvío.
+- **Conector → Av. del Ferrocarril:** el conteo de `conector_troncal` los incluye, y el giro `conector_troncal → ferrocarril` es cuántos tomaron el desvío.
 
 Identificadores de La Lucha:
 - **Entradas:** `ferrocarril`, `calle31_sur`, `calle31_oriente`, `conector_troncal`.

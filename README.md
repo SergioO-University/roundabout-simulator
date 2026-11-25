@@ -91,7 +91,7 @@ En la tarjeta **Datos reales** del simulador, arrastren los `.json` o usen **Ele
 - **Conteos estimados:** los accesos que aún no tienen toma se estiman a partir de lo medido. En orden de preferencia:
   1. El flujo diario medido por carril de entrada en la misma glorieta × los carriles del acceso (`entry_lanes` en `data/osm/sites.json`).
   2. El flujo típico por carril de las otras glorietas con datos. Así se estiman Mamatoco y La Piragua mientras no tengan tomas propias.
-- **Tope de la estimación:** el script simula la ventana del conteo (modo actual, como en campo) y baja los accesos estimados hasta que el acceso medido logra entrar lo que se contó. Hoy ese tope deja los accesos sin conteo de La Lucha en el 34 % del flujo por carril del Conector. Es un límite superior: dice cuánto tráfico cabe como máximo, no cuánto hay; si traen más, a las 16:37 el anillo se llena y el Conector ya no alcanza a descargar sus 336 vehículos.
+- **Tope de la estimación:** el script simula la ventana del conteo (modo actual, como en campo) y baja los accesos estimados hasta que el acceso medido logra entrar lo que se contó. Hoy ese tope deja los accesos sin conteo de La Lucha en el 53 % del flujo por carril del Conector. Es un límite superior: dice cuánto tráfico cabe como máximo, no cuánto hay; si traen más, a las 16:37 el anillo se llena y el Conector ya no alcanza a descargar sus 336 vehículos.
 - **Giros:** la proporción medida se respeta, y lo que falta se reparte según los giros supuestos.
 - **Velocidades:** las medidas en el anillo y en las salidas, por tipo de vehículo, fijan la velocidad que usa el simulador en esos tramos.
 - **En pantalla:** cada conteo aparece como **medido**, **estimado** o **supuesto**, en la tarjeta "Datos reales" y en la tabla de accesos.
@@ -106,7 +106,7 @@ El formato de las muestras está en `data/samples/README.md`.
 ### Parámetros calibrados con la primera muestra
 
 - **Tiempo de seguimiento (`follow_up_s`):** 1,8 s para motos, 2,8 s para carros y 3,8 s para busetas. Es el tiempo mínimo que deja un conductor en fila después de que entra el de adelante, y se reduce para los conductores más agresivos. Con estos valores, la mediana simulada del tiempo entre entradas (2,4 s) es igual a la medida.
-- **Entrada en paralelo (`roundabout.parallel_motorcycle_entry`):** si en la línea hay una moto al lado de un carro, la moto entra entre 0,4 y 1,0 s después y circulan lado a lado hasta separarse. Con esto el percentil 15 simulado (0,7 s) es igual al medido.
+- **Entrada en paralelo (`roundabout.parallel_motorcycle_entry` y `parallel_entry_delay_s`):** si en la línea hay una moto al lado de un carro, la moto entra entre 0,3 y 0,8 s después y circulan lado a lado hasta separarse. Con esto el percentil 15 simulado (0,7 s) es igual al medido.
 
 ## Un día completo
 
@@ -119,7 +119,7 @@ La simulación recorre **las 24 horas** de un día entre semana:
   - barras de color: vehículos que ya llegaron;
   - línea roja: espera promedio de cada hora;
   - franjas naranjas: horas pico.
-- **Comparador:** compara dos modos en el día completo o en una franja (pico de la mañana, del mediodía, de la tarde o valle), con las mismas llegadas. Para el día completo agrega la espera por franja.
+- **Comparador:** compara dos o tres modos en el día completo o en una franja (pico de la mañana, del mediodía, de la tarde o valle), con las mismas llegadas. Ver "Comparar escenarios".
 - **Exportar:** el resumen por hora de la corrida actual (CSV).
 
 ### Cómo se reparte la demanda en el día (`data/daily-profile.json`)
@@ -143,11 +143,12 @@ El perfil no es un conteo de 24 horas en La Lucha, porque no encontramos uno pú
 
 | Modo | Espera promedio | Se fueron por otra ruta | En cola a medianoche |
 |---|---|---|---|
-| Actual | 182 s | 1.539 (todos del Conector) | 0 |
-| Semáforo | 295 s | 8.877 | 1 |
-| Agente | 679 s | 23.633 | 2 |
+| Actual | 174 s | 2.695 | 0 |
+| Semáforo | 443 s | 8.274 | 2 |
+| Agente | 813 s | 26.453 | 3 |
 
-- **El cuello de botella es el Conector Troncal.** A las 16:40 ya entraba cerca de su capacidad, y en las horas pico le llega más de lo que cabe. La Av. del Ferrocarril, con el desvío a Ciénaga, casi no espera.
+- **Los desvíos pesan mucho.** Unos 21.700 vehículos al día pasan sin entrar al anillo: 11.000 por el desvío Conector → Av. del Ferrocarril y 10.700 por el desvío Av. del Ferrocarril → Troncal (Ciénaga).
+- **Hoy la espera más alta está en la Av. del Ferrocarril**, pero es un acceso *estimado* al tope máximo (53 % del flujo por carril del Conector). Es el acceso que más urge contar.
 - **Semáforo y agente** usan tiempos pensados para los volúmenes de prueba. Ajustar los verdes y los turnos a la demanda del día es parte del análisis del equipo.
 
 ### Desvío por congestión
@@ -156,6 +157,29 @@ Un conductor que llega y ve una fila que le tomaría más de 15 minutos (`simula
 - **Cálculo de la espera esperada:** vehículos en cola en ese acceso ÷ cuántos ha dejado entrar el acceso en los últimos 5 minutos.
 - **Dónde se ven:** en la tabla de accesos (entre paréntesis), en el comparador y en el CSV por hora.
 - **Por qué existe:** sin esto, cuando la demanda supera la capacidad la fila crece sin fin y a medianoche siguen miles de vehículos esperando. En la realidad la gente cambia de ruta. Con `null` nadie se desvía.
+
+## Comparar escenarios
+
+En la pestaña **Comparar escenarios** se eligen los modos (dos o tres) y la franja. El simulador corre cada modo sin dibujar, con las mismas llegadas, y abre una vista con gráficas:
+
+- **Tarjetas por métrica:** espera, vehículos que se fueron, que cruzaron, evacuación, cola máxima y anillo bloqueado. Cada modo trae ▲/▼ y el % de diferencia contra el primero (verde: mejor; rojo: peor).
+- **A lo largo del tiempo:** una línea por modo cada 15 minutos (espera, cola promedio, se fueron o evacuados), con las horas pico sombreadas. Al pasar el mouse se ven los valores de ese momento.
+- **Por acceso:** barras agrupadas de espera, se fueron o cola máxima. Muestran *dónde* está la diferencia.
+- **Mapa de escenarios (PCA):** cada punto es un bloque de 15 minutos de un modo, descrito por cinco métricas a la vez:
+  - espera;
+  - cola promedio;
+  - vehículos que se fueron;
+  - atendidos por cada vehículo que llegó;
+  - tiempo con el anillo bloqueado.
+
+  Cómo funciona:
+  - **Cálculo:** el análisis de componentes principales (`js/pca.js`) estandariza esas métricas y las proyecta en los dos ejes que conservan más variación.
+  - **Lectura:** las flechas dicen hacia dónde crece cada métrica, y el círculo grande es el promedio de cada modo. Si las nubes se separan, los modos se comportan distinto.
+  - **En palabras:** el texto de arriba del mapa explica qué significa cada eje y qué modo queda mejor ubicado.
+  - **Qué quedó por fuera:** la evacuación bruta. Mide sobre todo qué tan cargada está la hora, no qué tan bien responde el modo.
+- **Tabla completa** (plegada) y exportación a CSV o JSON.
+
+Colores fijos por modo: Actual azul, Semáforo naranja y Agente aqua. La paleta pasa el validador de daltonismo para gráficos de dispersión con tres series.
 
 ## Qué hace
 
@@ -202,6 +226,8 @@ El documento del reto sugiere nombres en español; esta tabla muestra a qué arc
 | `js/icons.js` | — | Íconos de los vehículos vistos desde arriba (moto con piloto, carro o taxi, buseta), con luces de freno y direccional. |
 | `js/data.js` | — | Carga los `.json` (o la copia embebida si no hay servidor). |
 | `js/demand.js` | — | Demanda del día: convierte conteos en vehículos por día y los reparte en bloques de 15 min con el perfil de 24 h. |
+| `js/pca.js` | — | Análisis de componentes principales (PCA) para el mapa de escenarios del comparador. |
+| `js/charts.js` | — | Gráficas SVG del comparador: líneas en el tiempo, barras por acceso y mapa PCA. |
 | `js/calibration.js` | — | Reglas de calibración: medido, estimado y supuesto. Lo usan el script, GitHub Actions y el botón "Probar muestras". |
 | `js/app.js` | — | Conecta los botones y el tablero con el motor. |
 | `data/geometry.json` | `geometria.json` | Forma del anillo y de cada entrada y salida (generado desde OpenStreetMap), carriles y capacidad de las salidas (hoy sin límite). |
@@ -265,7 +291,15 @@ muestra también "vehículos aún en cola al final".
 - **Accesos de 2 carriles** (como la Av. del Ferrocarril): dos filas independientes. La derecha entra al carril externo y la izquierda al interno, y pueden entrar a la vez.
 - **Accesos de 1 carril:** una fila más un carril de filtrado para motos. Una moto puede entrar al lado de un carro, y en el anillo van lado a lado hasta separarse.
 - Se modelan unos 130 m de cada entrada y 90 m de cada salida.
-- **Desvíos** (`bypasses` en `data/osm/sites.json`): en La Lucha, la Av. del Ferrocarril se divide antes de la glorieta. Quien va hacia la Troncal (Ciénaga) toma el desvío (OpenStreetMap, vía 153685974) y nunca entra al anillo. En el simulador esos vehículos recorren el desvío y salen. No cuentan en la espera ni en las colas del anillo, pero sí en las llegadas y en la evacuación. La unión del desvío con la salida a Ciénaga no se modela.
+- **Desvíos** (`bypasses` en `data/osm/sites.json`). En La Lucha hay dos vías que salen antes de la glorieta y nunca entran al anillo:
+  - **Av. del Ferrocarril → Troncal (Ciénaga)** (OpenStreetMap, vía 153685974);
+  - **Conector Troncal → Av. del Ferrocarril** hacia el norte (vía 549555145), desde el tramo de doble sentido del Conector.
+
+  Cómo se modelan:
+  - quien va de ese acceso a esa salida recorre el desvío y sale;
+  - no cuenta en la espera ni en las colas del anillo, pero sí en las llegadas y en la evacuación;
+  - en la calibración, el conteo de un acceso incluye a los que toman su desvío;
+  - la unión del desvío con la vía de destino no se modela.
 - La **capacidad de salida** (`exit_capacity_vph` en `data/osm/sites.json`) representa un trancón aguas abajo. Si una salida se llena, el vehículo
   que va hacia ella se queda quieto en el anillo y bloquea a los demás. Hoy no tiene límite: los valores anteriores eran de prueba y, con la demanda de un día real, bloqueaban la glorieta sin respaldo en datos. Se fija cuando se observe un trancón a la salida (valor `peak` para las horas pico y `offpeak` para el resto).
 - La demanda es la de un **día entre semana**; no se modelan fines de semana ni festivos.
