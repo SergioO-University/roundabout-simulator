@@ -17,6 +17,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
   Sim.conflictKey = conflictKey;
 
   // Resolves a value that can be a number or an object {peak, offpeak}.
+  Sim.capacityFor = (value, profile) => byProfile(value, profile);
   function byProfile(value, profile) {
     if (value === null || value === undefined) return null;
     if (typeof value === 'number') return value;
@@ -79,11 +80,74 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
     return bestS;
   }
 
+  // Two-way streets: in OpenStreetMap the entry and the exit of an arm often share the same centerline,
+  // so vehicles in opposite directions would be drawn on top of each other. Each direction is pushed
+  // to its own right-hand side (right-hand traffic) wherever the two paths are closer than their
+  // combined half widths; where they are already apart nothing moves.
+  function closestOn(pts, p) {
+    let best = { d: Infinity, x: 0, y: 0 };
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      const dx = b[0] - a[0];
+      const dy = b[1] - a[1];
+      const len2 = dx * dx + dy * dy || 1;
+      const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2));
+      const x = a[0] + dx * t;
+      const y = a[1] + dy * t;
+      const d = Math.hypot(x - p[0], y - p[1]);
+      if (d < best.d) best = { d, x, y };
+    }
+    return best;
+  }
+  function resample(pts, step) {
+    const out = [pts[0]];
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / step));
+      for (let k = 1; k <= n; k++) out.push([a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n]);
+    }
+    return out;
+  }
+  // Moves the path `pts` (half width `half`) away from `other` (half width `otherHalf`).
+  function separateFrom(pts, other, half, otherHalf) {
+    const P = resample(pts, 2);
+    const need = half + otherHalf;
+    const shift = P.map((p) => {
+      const c = closestOn(other, p);
+      return Math.max(0, need - c.d) * (half / need);
+    });
+    // Smooth the shift so the road bends gently in and out of the shared stretch.
+    const smooth = shift.map((_, i) => {
+      let sum = 0;
+      let n = 0;
+      for (let k = Math.max(0, i - 3); k <= Math.min(shift.length - 1, i + 3); k++) {
+        sum += shift[k];
+        n++;
+      }
+      return sum / n;
+    });
+    if (!smooth.some((x) => x > 0.05)) return pts;
+    return P.map((p, i) => {
+      const a = P[Math.max(0, i - 1)];
+      const b = P[Math.min(P.length - 1, i + 1)];
+      const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+      // Right-hand normal (same convention as pointAt with a positive lateral offset).
+      return [p[0] + Math.sin(ang) * smooth[i], p[1] - Math.cos(ang) * smooth[i]];
+    });
+  }
+
   Sim.prepareGeometry = function (site, laneWidth, profile, params) {
     const W = laneWidth;
+    // Drawn lane width. At the usual zoom the vehicle icons are drawn up to 35 % larger than real
+    // (or they would be a few pixels long), so roads are drawn wider in the same proportion; otherwise
+    // two vehicles passing side by side would look like they touch. Lateral positions only affect the
+    // drawing: the simulation runs along the centerlines.
+    const DW = W * 1.35;
     const ring = Sim.makePolyline(site.ring, true);
     const C = ring.length;
-    const ringWidth = site.ring_lanes * W;
+    const ringWidth = site.ring_lanes * DW;
     // The stop / yield line sits just outside the ring roadway.
     const lineOffset = ringWidth / 2 + 1;
     const stopDistance = (params && params.roundabout.ring_stop_distance_m) || 10;
@@ -98,21 +162,30 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         nIn: a.entry ? a.entry.lanes : 0,
         nOut: a.exit ? a.exit.lanes : 0,
         exitCapacity: byProfile(a.exit_capacity_vph, profile),
+        exitCapacityByProfile: a.exit_capacity_vph ?? null,
       };
+      let entryPts = a.entry ? a.entry.path : null;
+      let exitPts = a.exit ? a.exit.path : null;
+      if (entryPts && exitPts) {
+        const hIn = (a.entry.lanes * DW) / 2;
+        const hOut = (a.exit.lanes * DW) / 2;
+        entryPts = separateFrom(a.entry.path, a.exit.path, hIn, hOut);
+        exitPts = separateFrom(a.exit.path, a.entry.path, hOut, hIn);
+      }
       if (a.entry) {
-        res.entryPath = Sim.makePolyline(a.entry.path, false);
+        res.entryPath = Sim.makePolyline(entryPts, false);
         res.approachLength = Math.max(15, res.entryPath.length - lineOffset);
-        res.entryArc = projectOnPolyline(ring, a.entry.path[a.entry.path.length - 1]);
+        res.entryArc = projectOnPolyline(ring, entryPts[entryPts.length - 1]);
         res.stopArc = mod(res.entryArc - stopDistance, C);
         // Logical lane drawn on the right-hand lane; filtering motorcycles ride on its left edge.
-        res.latLane = ((res.nIn - 1) * W) / 2;
-        res.latFilter = res.latLane - W * 0.55;
+        res.latLane = ((res.nIn - 1) * DW) / 2;
+        res.latFilter = res.latLane - DW * 0.55;
       }
       if (a.exit) {
-        res.exitPath = Sim.makePolyline(a.exit.path, false);
+        res.exitPath = Sim.makePolyline(exitPts, false);
         res.exitLength = Math.max(15, res.exitPath.length - lineOffset);
-        res.exitArc = projectOnPolyline(ring, a.exit.path[0]);
-        res.latExit = ((res.nOut - 1) * W) / 2;
+        res.exitArc = projectOnPolyline(ring, exitPts[0]);
+        res.latExit = ((res.nOut - 1) * DW) / 2;
       }
       return res;
     });
@@ -130,6 +203,21 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       }
     }
 
+    // Lateral offset towards the outer edge of the ring (where a motorcycle rides next to a car).
+    let cx = 0;
+    let cy = 0;
+    for (const [x, y] of ring.pts) {
+      cx += x;
+      cy += y;
+    }
+    cx /= ring.pts.length;
+    cy /= ring.pts.length;
+    const p0 = Sim.pointAt(ring, 0, 0);
+    const p1 = Sim.pointAt(ring, 0, 1);
+    const outer = Math.hypot(p1.x - cx, p1.y - cy) > Math.hypot(p0.x - cx, p0.y - cy) ? 1 : -1;
+    // Two-lane ring: the motorcycle rides in the outer lane; one lane: towards the outer edge.
+    const ringOuterLat = outer * (site.ring_lanes >= 2 ? DW * 0.5 : DW * 0.3);
+
     return {
       name: site.name,
       center: site.center || null,
@@ -137,7 +225,10 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       ringPoints: site.ring,
       C,
       W,
+      drawW: DW,
+      ringLanes: site.ring_lanes,
       ringWidth,
+      ringOuterLat,
       lineOffset,
       approaches,
       entryIds: entries.map((a) => a.id),
@@ -147,6 +238,11 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       conflicts,
       phases: site.signal_phases || null,
       context: site.context || [],
+      // Slip roads: from one approach straight to one exit, without entering the ring.
+      bypasses: (site.bypasses || []).map((b) => {
+        const path = Sim.makePolyline(b.path, false);
+        return { id: b.id, name: b.name, from: b.from, to: b.to, lanes: b.lanes, path, length: path.length };
+      }),
     };
   };
 
@@ -177,17 +273,31 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
   };
 
   // Position of the vehicle CENTER in meters, and its heading (radians).
-  Sim.vehiclePosition = function (geo, v) {
+  // Lateral position on the ring (drawing only): the centre of its ring lane (outer or inner), plus a small
+  // offset when a motorcycle rides next to a car. Near its exit an inner-lane vehicle is drawn moving out.
+  Sim.ringLane = function (geo, v) {
+    const offset = v.ringLat || 0;
+    if (geo.ringLanes < 2) return offset;
+    const inner = (v.ringLane || 0) === 1 && v.remaining > 10;
+    return (inner ? -geo.ringOuterLat : geo.ringOuterLat) + offset;
+  };
+
+  // lateral (optional): override the ring lateral position (the renderer passes a smoothed one).
+  Sim.vehiclePosition = function (geo, v, lateral) {
     if (v.zone === 'lane' || v.zone === 'filter') {
       const a = geo.byId[v.approach];
       return Sim.pointAt(a.entryPath, v.s - v.length / 2, v.zone === 'filter' ? a.latFilter : a.latLane);
     }
     if (v.zone === 'ring') {
-      return Sim.pointAt(geo.ring, v.arc - v.length / 2, 0);
+      return Sim.pointAt(geo.ring, v.arc - v.length / 2, lateral ?? Sim.ringLane(geo, v));
     }
     if (v.zone === 'exit') {
       const a = geo.byId[v.destination];
       return Sim.pointAt(a.exitPath, geo.lineOffset + v.s - v.length / 2, a.latExit);
+    }
+    if (v.zone === 'bypass') {
+      const b = geo.bypasses.find((x) => x.id === v.bypass);
+      return Sim.pointAt(b.path, v.s - v.length / 2, 0);
     }
     return null;
   };

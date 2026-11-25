@@ -9,7 +9,8 @@
       "deceleration_ms2": 5,
       "min_gap_m": 1,
       "critical_gap_s": 2,
-      "pce": 0.4
+      "pce": 0.4,
+      "follow_up_s": 1.8
     },
     "car": {
       "length_m": 4.5,
@@ -19,7 +20,8 @@
       "deceleration_ms2": 4.5,
       "min_gap_m": 2,
       "critical_gap_s": 3.2,
-      "pce": 1
+      "pce": 1,
+      "follow_up_s": 2.8
     },
     "bus": {
       "length_m": 9,
@@ -29,13 +31,15 @@
       "deceleration_ms2": 3.5,
       "min_gap_m": 2.5,
       "critical_gap_s": 4,
-      "pce": 2
+      "pce": 2,
+      "follow_up_s": 3.8
     }
   },
   "roundabout": {
     "max_speed_ms": 7,
     "aggressiveness_factor": 0.4,
-    "ring_stop_distance_m": 10
+    "ring_stop_distance_m": 10,
+    "parallel_motorcycle_entry": true
   },
   "signal": {
     "green_s": [
@@ -57,7 +61,9 @@
     "seed": 2026,
     "max_duration_s": 3600,
     "comparison_duration_s": 900,
-    "arrival_mode": "exact_count"
+    "arrival_mode": "exact_count",
+    "divert_after_wait_s": 900,
+    "divert_note": "A driver who arrives and sees a queue that would take longer than this to get through takes another route (counted as diverted). null = nobody diverts."
   },
   "test_case": [
     {
