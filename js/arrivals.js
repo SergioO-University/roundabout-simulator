@@ -219,8 +219,9 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       const twoLanes = ap.nIn >= 2 && e.geo.ringLanes >= 2;
       while (s.pending.length) {
         const v = s.pending[0];
-        // Two-lane approach: the left lane (s.filter) for vehicles going further round, the right one for the rest.
-        const left = twoLanes && Sim.chooseRingLane(e, { ...ap, nIn: 1 }, v, false) === 1;
+        // Two-lane approach: short trips keep right, long trips (and U-turns) keep left, and trips in between
+        // take the lane with the shorter line, as drivers do (limits in parameters.json -> roundabout.lane_choice).
+        const left = twoLanes && Sim.chooseApproachLane(e, ap, v, s);
         const list = left ? s.filter : s.lane;
         const last = list[list.length - 1];
         const free = last ? last.s - last.length - v.props.minGap : Infinity;

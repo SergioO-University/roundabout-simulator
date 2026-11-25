@@ -44,7 +44,12 @@
       0.3,
       0.8
     ],
-    "parallel_entry_delay_note": "A motorcycle entering next to a car goes in this many seconds after it: [most aggressive, least aggressive]. Calibrated with the Conector headways (15th percentile 0.7 s)."
+    "parallel_entry_delay_note": "A motorcycle entering next to a car goes in this many seconds after it: [most aggressive, least aggressive]. Calibrated with the Conector headways (15th percentile 0.7 s).",
+    "lane_choice": {
+      "right_only_below": 0.25,
+      "left_only_above": 0.75
+    },
+    "lane_choice_note": "Two-lane approaches: trips shorter than this share of the ring keep right (outer ring lane), longer ones keep left (inner lane); in between, drivers join the lane with fewer vehicles."
   },
   "signal": {
     "green_s": [

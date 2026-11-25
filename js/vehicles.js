@@ -56,6 +56,21 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
     return trip > e.geo.C * 0.4 ? 1 : 0;
   };
 
+  // Two-lane approach: true = left lane (goes to the inner ring lane), false = right lane (outer ring lane).
+  // Trips shorter than right_only_below of the ring keep right; longer than left_only_above keep left;
+  // in between, the vehicle joins the lane with fewer vehicles (ties: the usual rule by trip length).
+  Sim.chooseApproachLane = function (e, a, v, s) {
+    const dest = e.geo.byId[v.destination];
+    let trip = mod(dest.exitArc - a.entryArc, e.geo.C);
+    if (trip < 1) trip += e.geo.C;
+    const f = trip / e.geo.C;
+    const lc = e.params.roundabout.lane_choice || { right_only_below: 0.4, left_only_above: 0.4 };
+    if (f < lc.right_only_below) return false;
+    if (f > lc.left_only_above) return true;
+    if (s.filter.length !== s.lane.length) return s.filter.length < s.lane.length;
+    return f > 0.4;
+  };
+
   // Can vehicle v merge onto the ring now from approach a, into ring lane `lane`?
   // Always checks physical room. With withGap (current mode) it also requires a time gap
   // in front of circulating vehicles: the critical gap, reduced by how aggressive the driver is.
