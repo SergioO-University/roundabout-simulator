@@ -1,0 +1,167 @@
+{
+  "_como_llenar": [
+    "Reemplacen solo los numeros en 0 y los textos entre corchetes. No cambien los nombres de las claves (profiles, peak, ferrocarril, motorcycle, etc.).",
+    "Conteos: vehiculos contados entre la hora de inicio y la de fin de 'time' (por ejemplo 15 minutos), por acceso y tipo. peak = hora pico, offpeak = hora valle; lo que mas importa es la hora exacta. El simulador representa un dia entre semana.",
+    "exits (opcional): vehiculos que SALEN de la glorieta por cada salida, si el conteo se hizo en una salida. approaches son solo los que ENTRAN. Lo que no se conto queda en null.",
+    "turning: de cada acceso de entrada, cuantos vehiculos se vieron salir por cada salida (en un tramo del video). Pueden poner conteos o proporciones: el simulador solo usa la proporcion.",
+    "observed_blockages: una entrada por cada bloqueo visto. Copien el ejemplo las veces que haga falta; si no hubo bloqueos, dejen la lista vacia: [].",
+    "Al terminar, este bloque reemplaza el de \"la_lucha\" dentro de data/counts.json (sites -> la_lucha). Luego: node tools/embed-data.js y node tests/engine.test.js.",
+    "Accesos con entrada: ferrocarril = Av. del Ferrocarril, calle31_sur = Calle 31 (sur), calle31_oriente = Calle 31 (oriente), conector_troncal = Conector Troncal (nororiente).",
+    "Salidas posibles: las mismas cuatro mas troncal_cienaga = Salida a Troncal (Cienaga), que es solo de salida."
+  ],
+  "site": "Rotonda de La Lucha",
+  "is_test_data": false,
+  "coordinates": [
+    0.0,
+    0.0
+  ],
+  "profiles": {
+    "peak": {
+      "time": "[HH:MM-HH:MM]",
+      "date": "[AAAA-MM-DD]",
+      "approaches": {
+        "ferrocarril": {
+          "motorcycle": 0,
+          "car": 0,
+          "bus": 0
+        },
+        "calle31_sur": {
+          "motorcycle": 0,
+          "car": 0,
+          "bus": 0
+        },
+        "calle31_oriente": {
+          "motorcycle": 0,
+          "car": 0,
+          "bus": 0
+        },
+        "conector_troncal": {
+          "motorcycle": 0,
+          "car": 0,
+          "bus": 0
+        }
+      },
+      "exits": {
+        "ferrocarril": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        },
+        "troncal_cienaga": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        },
+        "calle31_sur": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        },
+        "calle31_oriente": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        },
+        "conector_troncal": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        }
+      }
+    },
+    "offpeak": {
+      "time": "[HH:MM-HH:MM]",
+      "date": "[AAAA-MM-DD]",
+      "approaches": {
+        "ferrocarril": {
+          "motorcycle": 0,
+          "car": 0,
+          "bus": 0
+        },
+        "calle31_sur": {
+          "motorcycle": 0,
+          "car": 0,
+          "bus": 0
+        },
+        "calle31_oriente": {
+          "motorcycle": 0,
+          "car": 0,
+          "bus": 0
+        },
+        "conector_troncal": {
+          "motorcycle": 0,
+          "car": 0,
+          "bus": 0
+        }
+      },
+      "exits": {
+        "ferrocarril": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        },
+        "troncal_cienaga": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        },
+        "calle31_sur": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        },
+        "calle31_oriente": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        },
+        "conector_troncal": {
+          "motorcycle": null,
+          "car": null,
+          "bus": null
+        }
+      }
+    }
+  },
+  "turning": {
+    "ferrocarril": {
+      "ferrocarril": 0,
+      "troncal_cienaga": 0,
+      "calle31_sur": 0,
+      "calle31_oriente": 0,
+      "conector_troncal": 0
+    },
+    "calle31_sur": {
+      "ferrocarril": 0,
+      "troncal_cienaga": 0,
+      "calle31_sur": 0,
+      "calle31_oriente": 0,
+      "conector_troncal": 0
+    },
+    "calle31_oriente": {
+      "ferrocarril": 0,
+      "troncal_cienaga": 0,
+      "calle31_sur": 0,
+      "calle31_oriente": 0,
+      "conector_troncal": 0
+    },
+    "conector_troncal": {
+      "ferrocarril": 0,
+      "troncal_cienaga": 0,
+      "calle31_sur": 0,
+      "calle31_oriente": 0,
+      "conector_troncal": 0
+    }
+  },
+  "observed_blockages": [
+    {
+      "profile": "peak",
+      "time": "[HH:MM]",
+      "duration_s": 0,
+      "affected": "troncal_cienaga",
+      "cause": "[Salida llena | Vehiculo atravesado | Agente detuvo el flujo | Bus o taxi parado | Otro]",
+      "description": "[que se vio, en una frase]",
+      "video_minute": 0
+    }
+  ]
+}

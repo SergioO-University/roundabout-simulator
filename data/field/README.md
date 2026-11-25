@@ -17,3 +17,7 @@ node tests/engine.test.js            # confirma que todo sigue funcionando
 Con `--dry-run` el script revisa la planilla sin escribir nada. Si encuentra errores (un acceso mal escrito, un intervalo sin contar), dice la fila exacta y no escribe nada.
 
 No cambien los nombres de las pestañas (Conteos, Giros, Bloqueos, Tiempos, Brazos) ni los encabezados de las columnas: el script los busca tal cual.
+
+## Usar una IA para armar los datos
+
+Si prefieren no llenar la planilla, pueden adjuntar `instrucciones-para-ia.md` a ChatGPT, Claude o Gemini junto con sus datos (notas, tabla, Excel o foto). La IA pregunta lo que falte y devuelve el bloque JSON de `la_lucha` para `data/counts.json`. Lo que no tengan queda vacío (`null`); no inventa datos.
