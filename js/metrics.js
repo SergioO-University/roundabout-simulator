@@ -16,12 +16,14 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
     const geo = e0.geo;
     const ids = geo.entryIds; // queues, waits and calibration are per entry
     const hourOf = (e) => Math.floor((((e.startTod + e.t) % 86400) + 86400) % 86400 / 3600);
+    const blockOf = (e) => Math.floor((((e.startTod + e.t) % 86400) + 86400) % 86400 / 900);
     const m = {
       arrivals: {},
       crossedBy: {}, // approach -> { n, waitSum }
       exits: [], // instants of the last minutes (for "discharge last minute")
       exitedTotal: 0,
       bypassedTotal: 0,
+      bypassedBy: {}, // slip road id -> vehicles that took it
       divertedTotal: 0,
       divertedBy: {},
       crossedTotal: 0,
@@ -33,6 +35,8 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       conflictViolations: 0,
       series: [],
       hourly: Array.from({ length: 24 }, () => ({ arrivals: 0, crossed: 0, wait_sum: 0, exited: 0, diverted: 0, queue_max: 0, blocked_s: 0, seen: false })),
+      // The same per 15-minute block of the day (96), plus the average queue: the points of the scenario PCA.
+      blocks: Array.from({ length: 96 }, () => ({ arrivals: 0, crossed: 0, wait_sum: 0, exited: 0, diverted: 0, queue_max: 0, queue_sum: 0, samples: 0, blocked_s: 0, seen: false })),
       t0: e0.t,
     };
     for (const id of ids) {
@@ -45,7 +49,10 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
 
     m.arrival = function (v, e) {
       m.arrivals[v.approach][v.type]++;
-      if (e) m.hourly[hourOf(e)].arrivals++;
+      if (e) {
+        m.hourly[hourOf(e)].arrivals++;
+        m.blocks[blockOf(e)].arrivals++;
+      }
     };
 
     m.crossed = function (v, e) {
@@ -57,12 +64,16 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       const h = m.hourly[hourOf(e)];
       h.crossed++;
       h.wait_sum += wait;
+      const b = m.blocks[blockOf(e)];
+      b.crossed++;
+      b.wait_sum += wait;
     };
 
     m.exited = function (v, e) {
       m.exits.push(e.t);
       m.exitedTotal++;
       m.hourly[hourOf(e)].exited++;
+      m.blocks[blockOf(e)].exited++;
       if (m.exits.length > 4000) m.exits = m.exits.filter((t) => t > e.t - 60);
     };
 
@@ -71,17 +82,21 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       m.divertedTotal++;
       m.divertedBy[v.approach]++;
       m.hourly[hourOf(e)].diverted++;
+      m.blocks[blockOf(e)].diverted++;
     };
 
     // Took a slip road: it never entered the ring (no wait, not a crossing), but it did leave.
     m.bypassed = function (v, e) {
       m.bypassedTotal++;
+      m.bypassedBy[v.bypass] = (m.bypassedBy[v.bypass] || 0) + 1;
       m.exited(v, e);
     };
 
     m.record = function (e) {
       const h = m.hourly[hourOf(e)];
       h.seen = true;
+      const blk = m.blocks[blockOf(e)];
+      blk.seen = true;
       let queue = 0;
       for (const a of geo.approaches) {
         if (!a.hasEntry) continue;
@@ -92,8 +107,11 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         m.queueNow[a.id] = n;
         if (n > m.queueMax[a.id]) m.queueMax[a.id] = n;
         if (n > h.queue_max) h.queue_max = n;
+        if (n > blk.queue_max) blk.queue_max = n;
         queue += n;
       }
+      blk.queue_sum += queue;
+      blk.samples++;
       let blocked = false;
       for (const v of e.ring) {
         if (v.blocking) {
@@ -104,6 +122,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       if (blocked) {
         m.blockedTime_s += e.dt;
         h.blocked_s += e.dt;
+        blk.blocked_s += e.dt;
       }
 
       // Safety check: never two conflicting greens at the same time.
@@ -155,6 +174,19 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         blocked_s: r1(h.blocked_s),
         simulated: h.seen,
       }));
+      const blocks = m.blocks.map((b, block) => ({
+        block,
+        clock: Sim.clockText(block * 900),
+        arrivals: b.arrivals,
+        crossed: b.crossed,
+        exited: b.exited,
+        diverted: b.diverted,
+        avg_wait_s: b.crossed ? r1(b.wait_sum / b.crossed) : null,
+        avg_queue: b.samples ? r1(b.queue_sum / b.samples) : 0,
+        queue_max: b.queue_max,
+        blocked_s: r1(b.blocked_s),
+        simulated: b.seen,
+      }));
       return {
         time_s: r1(t),
         clock: Sim.clockText(e.startTod + e.t),
@@ -166,6 +198,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         vehicles_crossed: m.crossedTotal,
         vehicles_exited: m.exitedTotal,
         vehicles_bypassed: m.bypassedTotal,
+        bypassed_by: { ...m.bypassedBy },
         vehicles_diverted: m.divertedTotal,
         diverted_by_approach: { ...m.divertedBy },
         discharge_last_min: m.dischargeLastMinute(e.t),
@@ -180,6 +213,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         signal_conflicts: m.conflictViolations,
         calibration,
         hourly,
+        blocks,
       };
     };
 

@@ -71,6 +71,47 @@
           <div class="kpi"><span class="value" id="kpi-blocked">0</span><span class="caption">s · anillo bloqueado</span></div>
           <p class="extra" id="extra-metrics"></p>
         </div>
+        <section class="cmp-view" id="cmp-view" hidden>
+          <header class="cmp-head">
+            <div>
+              <h2>Comparación de escenarios</h2>
+              <p class="note" id="cmp-meta"></p>
+            </div>
+            <button id="btn-cmp-close">✕ Volver a la simulación</button>
+          </header>
+          <div class="tiles" id="cmp-tiles"></div>
+          <div class="cmp-grid">
+            <article class="cmp-card wide">
+              <div class="cmp-card-head"><h3>A lo largo del tiempo</h3><div class="chips" id="cmp-line-metric"></div></div>
+              <p class="note" id="cmp-line-note"></p>
+              <div id="cmp-line"></div>
+            </article>
+            <article class="cmp-card">
+              <div class="cmp-card-head"><h3>Por acceso</h3><div class="chips" id="cmp-bar-metric"></div></div>
+              <div id="cmp-bars"></div>
+            </article>
+            <article class="cmp-card">
+              <h3>Mapa de escenarios (PCA)</h3>
+              <div class="pca-text" id="cmp-pca-text"></div>
+              <div id="cmp-pca"></div>
+              <details class="details">
+                <summary>Cómo leer este mapa</summary>
+                <ul class="list">
+                  <li>Cada punto es un bloque de 15 minutos de un escenario, descrito por cinco métricas a la vez: espera, cola, vehículos que se fueron, atendidos por cada vehículo que llegó (1 = da abasto; menos de 1 = la cola crece) y tiempo con el anillo bloqueado.</li>
+                  <li>El PCA (análisis de componentes principales) combina esas cinco métricas en dos ejes que conservan la mayor parte de sus diferencias. Así se ven en un solo plano.</li>
+                  <li>Las flechas muestran hacia dónde crece cada métrica. Un punto cerca de la punta de "Espera" es un bloque con mucha espera.</li>
+                  <li>Si las nubes de colores quedan separadas, los escenarios se comportan distinto; si se superponen, se parecen. El círculo grande con borde es el promedio de cada escenario.</li>
+                </ul>
+              </details>
+            </article>
+            <article class="cmp-card wide">
+              <details class="details">
+                <summary>Tabla completa</summary>
+                <div id="cmp-table"></div>
+              </details>
+            </article>
+          </div>
+        </section>
       </section>
 
       <aside class="panel">
@@ -159,14 +200,18 @@
                 <option value="09:00-11:30">Valle de la mañana (09:00–11:30)</option>
               </select>
             </label>
-            <div class="row2 equal">
-              <label>Modo A <select id="cmp-a"></select></label>
-              <label>Modo B <select id="cmp-b"></select></label>
+            <p class="note">Modos a comparar (dos o tres):</p>
+            <div class="mode-checks" id="cmp-modes">
+              <label class="checkbox"><input type="checkbox" value="current" checked><i class="sw" style="background: var(--mode-current)"></i>Actual</label>
+              <label class="checkbox"><input type="checkbox" value="signal" checked><i class="sw" style="background: var(--mode-signal)"></i>Semáforo</label>
+              <label class="checkbox"><input type="checkbox" value="officer" checked><i class="sw" style="background: var(--mode-officer)"></i>Agente</label>
             </div>
             <button id="btn-compare" class="primary wide">Comparar</button>
+            <p class="note" id="cmp-progress"></p>
           </div>
           <div class="card" id="cmp-card" hidden>
-            <div id="cmp-result"></div>
+            <div id="cmp-summary"></div>
+            <button id="btn-cmp-open" class="wide">📊 Ver gráficas de la comparación</button>
             <div class="button-row">
               <button id="exp-cmp-csv">CSV</button>
               <button id="exp-cmp-json">JSON</button>
@@ -193,6 +238,8 @@
     <script src="js/icons.js"></script>
     <script src="js/renderer.js"></script>
     <script src="js/data.js"></script>
+    <script src="js/pca.js"></script>
+    <script src="js/charts.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

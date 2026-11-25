@@ -39,12 +39,6 @@
   $('sel-site').value = data.geometry.active_site || Object.keys(data.geometry.sites)[0];
   $('inp-seed').value = params.simulation.seed;
   for (let h = 0; h < 24; h++) $('sel-hour').add(new Option(`${String(h).padStart(2, '0')}:00`, h));
-  for (const [key, name] of Object.entries(Sim.MODES)) {
-    $('cmp-a').add(new Option(name, key));
-    $('cmp-b').add(new Option(name, key));
-  }
-  $('cmp-a').value = 'current';
-  $('cmp-b').value = 'officer';
 
   // A day run starts at ui.startHour (00:00 by default) and goes to midnight. Starting later, the 30 minutes
   // before are simulated first (not counted) so the roundabout is not empty at that hour.
@@ -590,18 +584,41 @@
   });
 
   // ---------- Comparator ----------
+  // Runs 2 or 3 modes with the same seed (same arrivals) and shows the difference in charts:
+  // tiles per metric, a line over time, bars per approach, and a PCA map of 15-minute blocks.
+  const MODE_NAMES = { current: 'Actual', signal: 'Semáforo', officer: 'Agente' };
+  const MODE_COLORS = { current: '#257de0', signal: '#f47230', officer: '#00b894' }; // categorical slots 1-3, fixed per mode
+  const sumValues = (o) => Object.values(o).reduce((s, x) => s + x, 0);
+  const TILE_METRICS = [
+    ['Espera promedio', (r) => r.avg_wait_s, 'lower', (v) => `${v.toLocaleString('es-CO')} s`],
+    ['Se fueron por otra ruta', (r) => r.vehicles_diverted || 0, 'lower', (v) => v.toLocaleString('es-CO')],
+    ['Cruzaron la glorieta', (r) => r.vehicles_crossed, 'higher', (v) => v.toLocaleString('es-CO')],
+    ['Evacuación promedio', (r) => r.discharge_avg_per_min, 'higher', (v) => `${v.toLocaleString('es-CO')} veh/min`],
+    ['Cola máxima en un acceso', (r) => r.queue_max_overall, 'lower', (v) => `${v.toLocaleString('es-CO')} veh`],
+    ['Anillo bloqueado', (r) => r.blocked_time_s, 'lower', (v) => `${Math.round(v).toLocaleString('es-CO')} s`],
+  ];
   const ROWS = [
     ['Evacuación promedio (veh/min)', (r) => r.discharge_avg_per_min, 'higher'],
-    ['Evacuación último minuto (veh/min)', (r) => r.discharge_last_min, 'higher'],
     ['Espera promedio (s)', (r) => r.avg_wait_s, 'lower'],
     ['Cola máxima (veh)', (r) => r.queue_max_overall, 'lower'],
     ['Vehículos que cruzaron', (r) => r.vehicles_crossed, 'higher'],
     ['Se fueron por otra ruta (fila muy larga)', (r) => r.vehicles_diverted || 0, 'lower'],
-    ['Aún en cola al final', (r) => Object.values(r.queue_now).reduce((s, x) => s + x, 0), 'lower'],
+    ['Aún en cola al final', (r) => sumValues(r.queue_now), 'lower'],
     ['Anillo bloqueado (s)', (r) => r.blocked_time_s, 'lower'],
     ['Vehículos atravesados', (r) => r.blocking_vehicles, 'lower'],
   ];
-  const SHORT_MODES = { current: 'Actual', signal: 'Semáforo', officer: 'Agente' };
+  const LINE_METRICS = {
+    wait: ['Espera promedio', (b) => b.avg_wait_s, (v) => `${Math.round(v)} s`, 'Segundos que esperaron, en promedio, los vehículos que entraron al anillo en cada bloque de 15 minutos.'],
+    queue: ['Cola promedio', (b) => b.avg_queue, (v) => `${Math.round(v)} veh`, 'Vehículos en cola, sumando todos los accesos, en promedio durante cada bloque de 15 minutos.'],
+    diverted: ['Se fueron', (b) => b.diverted, (v) => `${Math.round(v)} veh`, 'Vehículos que vieron una fila demasiado larga y se fueron por otra ruta, en cada bloque de 15 minutos.'],
+    exited: ['Evacuados', (b) => b.exited, (v) => `${Math.round(v)} veh`, 'Vehículos que salieron de la glorieta en cada bloque de 15 minutos (más es mejor).'],
+  };
+  const BAR_METRICS = {
+    wait: ['Espera promedio', (r, id) => r.avg_wait_by_approach_s[id] ?? 0, (v) => `${Math.round(v)} s`],
+    diverted: ['Se fueron', (r, id) => r.diverted_by_approach[id] ?? 0, (v) => Math.round(v).toLocaleString('es-CO')],
+    queue: ['Cola máxima', (r, id) => r.queue_max[id] ?? 0, (v) => `${Math.round(v)} veh`],
+  };
+  const cmpUi = { line: 'wait', bar: 'wait' };
 
   // Runs one scenario in slices so the page keeps responding (a whole day takes a few seconds per mode).
   function runInSlices(cfg, onProgress) {
@@ -622,6 +639,11 @@
   }
 
   $('btn-compare').addEventListener('click', async () => {
+    const modes = [...$('cmp-modes').querySelectorAll('input:checked')].map((x) => x.value);
+    if (modes.length < 2) {
+      $('cmp-progress').textContent = 'Elijan al menos dos modos.';
+      return;
+    }
     const base = currentConfig();
     base.profile = 'day';
     const choice = $('cmp-window').value;
@@ -635,60 +657,178 @@
       duration = w[1] - w[0];
       warmup = WARMUP_S;
     }
-    const modes = [$('cmp-a').value, $('cmp-b').value];
-    $('cmp-card').hidden = false;
     $('btn-compare').disabled = true;
     const results = [];
     for (const [i, mode] of modes.entries()) {
       const cfg = { ...base, mode, start_s: start, warmup_s: warmup, duration_s: duration };
       results.push(
         await runInSlices(cfg, (f) => {
-          $('cmp-result').innerHTML = `<p class="note">Corriendo ${i === 0 ? 'A' : 'B'} (${SHORT_MODES[mode]})… ${Math.round(f * 100)} %</p>`;
+          $('cmp-progress').textContent = `Corriendo ${MODE_NAMES[mode]} (${i + 1} de ${modes.length})… ${Math.round(f * 100)} %`;
         }),
       );
     }
     $('btn-compare').disabled = false;
+    $('cmp-progress').textContent = '';
     ui.comparison = { config: { ...base, start_s: start, duration_s: duration, window: label }, modes, results };
     renderComparison();
+    openComparison();
   });
 
   function renderComparison() {
     const c = ui.comparison;
-    const [a, b] = c.results;
     const site = data.geometry.sites[c.config.site];
     const nameOf = (id) => (site.approaches.find((x) => x.id === id) || { name: id }).name;
-    const rows = ROWS.map(([name, f, better]) => [name, f(a), f(b), better]);
-    for (const id of Object.keys(a.queue_max)) {
-      rows.push([`Cola máx · ${nameOf(id)}`, a.queue_max[id], b.queue_max[id], 'lower']);
-      rows.push([`Espera · ${nameOf(id)} (s)`, a.avg_wait_by_approach_s[id] ?? 0, b.avg_wait_by_approach_s[id] ?? 0, 'lower']);
-      rows.push([`Se fueron · ${nameOf(id)}`, a.diverted_by_approach[id] ?? 0, b.diverted_by_approach[id] ?? 0, 'lower']);
+    const first = c.results[0];
+    const rows = ROWS.map(([name, f, better]) => [name, c.results.map(f), better]);
+    for (const id of Object.keys(first.queue_max)) {
+      rows.push([`Cola máx · ${nameOf(id)}`, c.results.map((r) => r.queue_max[id]), 'lower']);
+      rows.push([`Espera · ${nameOf(id)} (s)`, c.results.map((r) => r.avg_wait_by_approach_s[id] ?? 0), 'lower']);
+      rows.push([`Se fueron · ${nameOf(id)}`, c.results.map((r) => r.diverted_by_approach[id] ?? 0), 'lower']);
     }
-    // Average wait in each period of the day covered by the run (from the hourly figures).
-    const covered = (p) => p.start < c.config.start_s + c.config.duration_s && p.end > c.config.start_s;
-    const periodWait = (r, p) => {
-      let n = 0;
-      let sum = 0;
-      for (const x of r.hourly) {
-        const mid = x.hour * 3600 + 1800;
-        if (mid < p.start || mid >= p.end || !x.crossed) continue;
-        n += x.crossed;
-        sum += x.avg_wait_s * x.crossed;
+    c.rows = rows.map(([metric, values]) => ({ metric, ...Object.fromEntries(c.modes.map((m, i) => [m, values[i]])) }));
+    // full table (difference against the first mode)
+    let html = `<table class="table"><thead><tr><th>Métrica</th>${c.modes.map((m) => `<th>${MODE_NAMES[m]}</th>`).join('')}</tr></thead><tbody>`;
+    for (const [name, values, better] of rows) {
+      html += `<tr><td>${name}</td>` + values.map((v, i) => {
+        if (i === 0) return `<td>${v}</td>`;
+        const d = Math.round((v - values[0]) * 10) / 10;
+        const cls = d === 0 ? '' : (d > 0) === (better === 'higher') ? 'good' : 'bad';
+        return `<td>${v} <small class="${cls}">(${d > 0 ? '+' : ''}${d})</small></td>`;
+      }).join('') + '</tr>';
+    }
+    html += `</tbody></table><p class="note">Entre paréntesis, la diferencia contra ${MODE_NAMES[c.modes[0]]}. Verde: mejor; rojo: peor.</p>`;
+    $('cmp-table').innerHTML = html;
+    // short summary in the panel
+    const byWait = c.modes.map((m, i) => [m, c.results[i]]).sort((x, y) => x[1].avg_wait_s + (x[1].vehicles_diverted || 0) * 60 - (y[1].avg_wait_s + (y[1].vehicles_diverted || 0) * 60));
+    $('cmp-summary').innerHTML =
+      `<p class="note">${site.name} · ${c.config.window} · semilla ${c.config.seed}</p>` +
+      c.modes.map((m, i) => `<div class="tile-line"><i class="sw" style="background:${MODE_COLORS[m]}"></i><b>${MODE_NAMES[m]}</b>: espera ${c.results[i].avg_wait_s} s · se fueron ${(c.results[i].vehicles_diverted || 0).toLocaleString('es-CO')}</div>`).join('') +
+      `<p class="note">Mejor en esta franja: <b>${MODE_NAMES[byWait[0][0]]}</b> (menos espera y menos vehículos que se van).</p>`;
+    $('cmp-card').hidden = false;
+  }
+
+  function openComparison() {
+    $('cmp-view').hidden = false;
+    drawComparisonCharts();
+  }
+  $('btn-cmp-open').addEventListener('click', openComparison);
+  $('btn-cmp-close').addEventListener('click', () => ($('cmp-view').hidden = true));
+  window.addEventListener('resize', () => {
+    if (!$('cmp-view').hidden) drawComparisonCharts();
+  });
+
+  function chips(container, options, current, onPick) {
+    container.innerHTML = '';
+    for (const [key, [name]] of Object.entries(options)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = name;
+      b.classList.toggle('active', key === current);
+      b.addEventListener('click', () => onPick(key));
+      container.appendChild(b);
+    }
+  }
+
+  function drawComparisonCharts() {
+    const c = ui.comparison;
+    if (!c) return;
+    const site = data.geometry.sites[c.config.site];
+    const nameOf = (id) => (site.approaches.find((x) => x.id === id) || { name: id }).name;
+    const series = c.modes.map((m) => ({ id: m, name: MODE_NAMES[m], color: MODE_COLORS[m] }));
+    $('cmp-meta').textContent = `${site.name} · ${c.config.window} · semilla ${c.config.seed} · mismas llegadas en todos los modos`;
+
+    // Tiles: one per metric, every mode, difference against the first one
+    $('cmp-tiles').innerHTML = TILE_METRICS.map(([name, f, better, fmt]) => {
+      const values = c.results.map(f);
+      const rows = c.modes.map((m, i) => {
+        let delta = '';
+        if (i > 0) {
+          const base = values[0];
+          const d = values[i] - base;
+          const rel = base ? Math.round((d / base) * 100) : null;
+          const good = d === 0 ? '' : (d > 0) === (better === 'higher') ? 'good' : 'bad';
+          const arrow = d > 0 ? '▲' : d < 0 ? '▼' : '=';
+          delta = `<span class="delta ${good}">${arrow} ${rel === null ? fmt(Math.abs(d)) : Math.abs(rel) + ' %'}</span>`;
+        }
+        return `<div class="row"><i style="background:${MODE_COLORS[m]}"></i><span>${MODE_NAMES[m]}</span>&nbsp;<b>${fmt(values[i])}</b>${delta}</div>`;
+      });
+      return `<div class="tile"><h4>${name}</h4>${rows.join('')}</div>`;
+    }).join('');
+
+    // Line over time (15-minute blocks inside the compared window)
+    const first = c.config.start_s / 900;
+    const count = Math.round(c.config.duration_s / 900);
+    const idx = Array.from({ length: count }, (_, k) => (first + k) % 96);
+    const [lname, lget, lfmt, lnote] = LINE_METRICS[cmpUi.line];
+    chips($('cmp-line-metric'), LINE_METRICS, cmpUi.line, (k) => {
+      cmpUi.line = k;
+      drawComparisonCharts();
+    });
+    $('cmp-line-note').textContent = lnote + ' Franjas naranjas: horas pico.';
+    const demand = engine.state.demand;
+    const bands = [];
+    for (const p of demand.periods.filter((p) => p.peak)) {
+      const from = idx.findIndex((b) => b * 900 >= p.start);
+      let to = idx.findIndex((b) => b * 900 >= p.end);
+      if (from < 0) continue;
+      if (to < 0) to = idx.length - 1;
+      if (to > from) bands.push({ from, to });
+    }
+    Sim.Charts.line($('cmp-line'), {
+      labels: idx.map((b) => Sim.clockText(b * 900)),
+      series: series.map((s, i) => ({ ...s, values: idx.map((b) => {
+        const v = lget(c.results[i].blocks[b]);
+        return v === undefined ? null : v;
+      }) })),
+      format: (v) => lfmt(v),
+      bands,
+    });
+
+    // Bars per approach
+    chips($('cmp-bar-metric'), BAR_METRICS, cmpUi.bar, (k) => {
+      cmpUi.bar = k;
+      drawComparisonCharts();
+    });
+    const [, bget, bfmt] = BAR_METRICS[cmpUi.bar];
+    const ids = Object.keys(c.results[0].queue_max);
+    Sim.Charts.bars($('cmp-bars'), {
+      categories: ids.map(nameOf),
+      series: series.map((s, i) => ({ ...s, values: ids.map((id) => bget(c.results[i], id)) })),
+      format: bfmt,
+    });
+
+    // PCA: each 15-minute block of each mode is a point described by five metrics
+    // "Atendidos / llegadas": vehicles that left per vehicle that arrived in the block (1 = keeping up,
+    // below 1 = the queue grows). Raw throughput is left out on purpose: it mostly measures how busy the hour is.
+    const FEATURES = ['Espera', 'Cola', 'Se fueron', 'Atendidos / llegadas', 'Anillo bloqueado'];
+    const active = idx.filter((b) => c.results.some((r) => r.blocks[b].arrivals > 0));
+    const rowsPca = [];
+    const groups = [];
+    const pts = [];
+    c.modes.forEach((m, i) => {
+      for (const b of active) {
+        const x = c.results[i].blocks[b];
+        const served = x.arrivals ? Math.min(2, x.exited / x.arrivals) : 1;
+        rowsPca.push([x.avg_wait_s ?? 0, x.avg_queue, x.diverted, served, x.blocked_s]);
+        groups.push(m);
+        pts.push({ series: m, label: Sim.clockText(b * 900), detail: `Espera ${Math.round(x.avg_wait_s ?? 0)} s · cola ${Math.round(x.avg_queue)} · se fueron ${x.diverted} · llegaron ${x.arrivals}, salieron ${x.exited}` });
       }
-      return n ? Math.round((sum / n) * 10) / 10 : 0;
-    };
-    if (c.config.duration_s >= 6 * 3600) {
-      for (const p of engine.state.demand.periods.filter(covered)) rows.push([`Espera · ${p.name} (s)`, periodWait(a, p), periodWait(b, p), 'lower']);
+    });
+    const pca = Sim.pca(rowsPca, FEATURES, 'Espera'); // more wait always to the right
+    if (!pca) {
+      $('cmp-pca-text').innerHTML = '<p>No hay suficientes bloques con tráfico para el PCA en esta franja.</p>';
+      $('cmp-pca').innerHTML = '';
+      return;
     }
-    c.rows = rows.map(([name, va, vb]) => ({ metric: name, a: va, b: vb, difference: Math.round((vb - va) * 10) / 10 }));
-    let html = `<p class="note">${site.name} · ${c.config.window} · semilla ${c.config.seed}</p>`;
-    html += `<table class="table"><thead><tr><th>Métrica</th><th>A: ${SHORT_MODES[c.modes[0]]}</th><th>B: ${SHORT_MODES[c.modes[1]]}</th><th>B − A</th></tr></thead><tbody>`;
-    for (const [name, va, vb, better] of rows) {
-      const d = Math.round((vb - va) * 10) / 10;
-      const cls = d === 0 ? '' : (d > 0) === (better === 'higher') ? 'good' : 'bad';
-      html += `<tr><td>${name}</td><td>${va}</td><td>${vb}</td><td class="${cls}">${d > 0 ? '+' : ''}${d}</td></tr>`;
-    }
-    html += '</tbody></table><p class="note">Verde: B es mejor que A. Rojo: B es peor.</p>';
-    $('cmp-result').innerHTML = html;
+    const PHRASES = { Espera: 'espera', Cola: 'cola', 'Se fueron': 'vehículos que se van por otra ruta', 'Atendidos / llegadas': 'vehículos atendidos por cada uno que llega', 'Anillo bloqueado': 'tiempo con el anillo bloqueado' };
+    $('cmp-pca-text').innerHTML = Sim.describePca(pca, groups, MODE_NAMES, PHRASES).map((t) => `<p>${t}</p>`).join('');
+    Sim.Charts.scatter($('cmp-pca'), {
+      points: pts.map((p, i) => ({ ...p, x: pca.scores[i][0], y: pca.scores[i][1] })),
+      series,
+      loadings: pca.loadings.map((l) => ({ name: l.name, x: l.pc1, y: l.pc2 })),
+      xTitle: `Componente 1 (${Math.round(pca.explained[0] * 100)} %) →`,
+      yTitle: `Componente 2 (${Math.round(pca.explained[1] * 100)} %) →`,
+    });
   }
 
   // ---------- Export ----------
@@ -706,8 +846,8 @@
   $('exp-cmp-csv').addEventListener('click', () => {
     const c = ui.comparison;
     if (!c) return;
-    const rows = [['metric', Sim.MODES[c.modes[0]], Sim.MODES[c.modes[1]], 'difference_B_minus_A']];
-    for (const r of c.rows) rows.push([r.metric, r.a, r.b, r.difference]);
+    const rows = [['metric', ...c.modes.map((m) => Sim.MODES[m])]];
+    for (const r of c.rows) rows.push([r.metric, ...c.modes.map((m) => r[m])]);
     download(`comparison-${c.config.site}-${c.config.window.split(' (')[0].replace(/\s+/g, '-')}-seed${c.config.seed}.csv`, toCsv(rows), 'text/csv');
   });
   $('exp-cmp-json').addEventListener('click', () => {
