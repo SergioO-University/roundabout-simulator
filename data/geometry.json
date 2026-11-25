@@ -212,10 +212,7 @@
        ]
       ]
      },
-     "exit_capacity_vph": {
-      "peak": 450,
-      "offpeak": 2400
-     }
+     "exit_capacity_vph": null
     },
     {
      "id": "calle31_sur",
@@ -357,10 +354,7 @@
        ]
       ]
      },
-     "exit_capacity_vph": {
-      "peak": 900,
-      "offpeak": 1500
-     }
+     "exit_capacity_vph": null
     },
     {
      "id": "conector_troncal",
@@ -428,6 +422,56 @@
       ]
      },
      "exit_capacity_vph": null
+    }
+   ],
+   "bypasses": [
+    {
+     "id": "ferrocarril_troncal",
+     "name": "Desvío a Troncal (Ciénaga)",
+     "from": "ferrocarril",
+     "to": "troncal_cienaga",
+     "lanes": 1,
+     "osm_ways": [
+      153685974
+     ],
+     "path": [
+      [
+       -112,
+       142.3
+      ],
+      [
+       -98.9,
+       106.7
+      ],
+      [
+       -86.9,
+       75.5
+      ],
+      [
+       -77.8,
+       34.6
+      ],
+      [
+       -71.2,
+       6.4
+      ],
+      [
+       -69.4,
+       -7.8
+      ],
+      [
+       -64.5,
+       -46.1
+      ],
+      [
+       -64.1,
+       -56.3
+      ],
+      [
+       -62,
+       -101.4
+      ]
+     ]
     }
    ],
    "signal_phases": null,
@@ -595,49 +639,6 @@
       [
        33.3,
        210.8
-      ]
-     ]
-    },
-    {
-     "name": "Salida a Avenida Troncal del Caribe",
-     "kind": "road",
-     "lanes": 1,
-     "path": [
-      [
-       -112,
-       142.3
-      ],
-      [
-       -98.9,
-       106.7
-      ],
-      [
-       -86.9,
-       75.5
-      ],
-      [
-       -77.8,
-       34.6
-      ],
-      [
-       -71.2,
-       6.4
-      ],
-      [
-       -69.4,
-       -7.8
-      ],
-      [
-       -64.5,
-       -46.1
-      ],
-      [
-       -64.1,
-       -56.3
-      ],
-      [
-       -62,
-       -101.4
       ]
      ]
     },
@@ -1529,10 +1530,7 @@
        ]
       ]
      },
-     "exit_capacity_vph": {
-      "peak": 1200,
-      "offpeak": 2400
-     }
+     "exit_capacity_vph": null
     }
    ],
    "signal_phases": null,
@@ -2090,10 +2088,7 @@
        ]
       ]
      },
-     "exit_capacity_vph": {
-      "peak": 1400,
-      "offpeak": 2400
-     }
+     "exit_capacity_vph": null
     },
     {
      "id": "carrera35",

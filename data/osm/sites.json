@@ -31,10 +31,7 @@
             549555148
           ],
           "exit_lanes": 2,
-          "exit_capacity_vph": {
-            "peak": 450,
-            "offpeak": 2400
-          }
+          "exit_capacity_vph": null
         },
         {
           "id": "calle31_sur",
@@ -64,10 +61,7 @@
           ],
           "entry_lanes": 1,
           "exit_lanes": 1,
-          "exit_capacity_vph": {
-            "peak": 900,
-            "offpeak": 1500
-          }
+          "exit_capacity_vph": null
         },
         {
           "id": "conector_troncal",
@@ -88,6 +82,19 @@
       "context_bridges": [
         527068721,
         549555137
+      ],
+      "bypasses": [
+        {
+          "id": "ferrocarril_troncal",
+          "name": "Desvío a Troncal (Ciénaga)",
+          "from": "ferrocarril",
+          "to": "troncal_cienaga",
+          "ways": [
+            153685974
+          ],
+          "lanes": 1,
+          "note": "Carrera 15 / Av. del Ferrocarril splits before the roundabout: traffic to the Troncal (Ciénaga) takes this link and never enters the ring."
+        }
       ]
     },
     "mamatoco": {
@@ -148,10 +155,7 @@
           ],
           "entry_lanes": 2,
           "exit_lanes": 2,
-          "exit_capacity_vph": {
-            "peak": 1200,
-            "offpeak": 2400
-          }
+          "exit_capacity_vph": null
         }
       ],
       "context_bridges": []
@@ -200,10 +204,7 @@
           ],
           "entry_lanes": 2,
           "exit_lanes": 2,
-          "exit_capacity_vph": {
-            "peak": 1400,
-            "offpeak": 2400
-          }
+          "exit_capacity_vph": null
         },
         {
           "id": "carrera35",

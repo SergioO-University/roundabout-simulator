@@ -103,6 +103,12 @@ for (const [key, site] of Object.entries(config.sites)) {
     return res;
   });
 
+  // Bypasses (slip roads): traffic from one approach to one exit that never enters the ring.
+  const bypasses = (site.bypasses || []).map((b) => {
+    const p = chain(b.ways, b.lanes || 1, b.id + ' bypass');
+    return { id: b.id, name: b.name, from: b.from, to: b.to, lanes: b.lanes || 1, osm_ways: b.ways, path: p.map((q) => q.map(round)) };
+  });
+
   // Every other nearby road is kept as drawing context (with the bridges drawn on top).
   const context = [];
   for (const w of ways) {
@@ -124,13 +130,14 @@ for (const [key, site] of Object.entries(config.sites)) {
     ring_lanes: site.ring_lanes,
     ring: ring.map((q) => q.map(round)),
     approaches,
+    bypasses: bypasses.length ? bypasses : undefined,
     signal_phases: site.signal_phases || null,
     context,
   };
   const radii = ring.map((p) => Math.hypot(p[0], p[1]));
   console.log(
     `${key}: ring ${polylineLength([...ring, ring[0]]).toFixed(0)} m around (radius ${Math.min(...radii).toFixed(0)}-${Math.max(...radii).toFixed(0)} m), ` +
-      `${approaches.length} approaches (${entries.length} with entry), ${context.length} context roads`,
+      `${approaches.length} approaches (${entries.length} with entry), ${bypasses.length} bypass(es), ${context.length} context roads`,
   );
 }
 
