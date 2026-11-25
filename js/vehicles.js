@@ -282,7 +282,8 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         L - other.s <= 1
       ) {
         const moto = entering.type === 'motorcycle' ? entering : other;
-        s.pairing = { v: other, partner: entering, at: e.t + 0.4 + 0.6 * (1 - (moto.aggressiveness || 0)) };
+        const [dMin, dMax] = e.params.roundabout.parallel_entry_delay_s || [0.4, 1.0];
+        s.pairing = { v: other, partner: entering, at: e.t + dMin + (dMax - dMin) * (1 - (moto.aggressiveness || 0)) };
       }
     } else if (s.pairing && e.t >= s.pairing.at - 1e-9) {
       const { v, partner } = s.pairing;

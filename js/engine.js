@@ -159,6 +159,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         t_cross: v.t_cross,
         wait_s: v.t_cross !== null ? Math.round((v.t_cross - v.t_queue) * 10) / 10 : null,
         t_exit: v.t_exit,
+        slip_road: v.bypass || null,
         got_stuck: v.everBlocked,
       };
     }

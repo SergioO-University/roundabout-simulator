@@ -351,11 +351,16 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
 
       // Slip roads: name and how many vehicles took them (they never enter the ring).
       for (const b of geo.bypasses) {
-        const p = Sim.pointAt(b.path, b.length * 0.55, -(b.lanes * W) / 2 - 6);
-        const yb = Math.max(renderer.insets.top + 12, Math.min(h - renderer.insets.bottom - 12, Y(p.y)));
-        const n = e.metrics.bypassedTotal;
-        label(b.name, X(p.x), yb - (small ? 9 : 11), 'rgba(255,255,255,0.93)', COLORS.text, 'right');
-        label(`sin entrar al anillo: ${n.toLocaleString('es-CO')}`, X(p.x), yb + (small ? 9 : 11), 'rgba(255,255,255,0.85)', COLORS.text, 'right');
+        // mostly vertical road: label beside it, right-aligned; mostly horizontal: centred above its middle
+        const a0 = b.path.pts[0];
+        const a1 = b.path.pts[b.path.pts.length - 1];
+        const horizontal = Math.abs(a1[0] - a0[0]) > Math.abs(a1[1] - a0[1]);
+        const p = horizontal ? Sim.pointAt(b.path, b.length * 0.5, 0) : Sim.pointAt(b.path, b.length * 0.55, -(b.lanes * W) / 2 - 6);
+        const align = horizontal ? 'center' : 'right';
+        const yb = Math.max(renderer.insets.top + 12, Math.min(h - renderer.insets.bottom - 12, Y(p.y) - (horizontal ? (small ? 24 : 30) : 0)));
+        const n = e.metrics.bypassedBy[b.id] || 0;
+        label(b.name, X(p.x), yb - (small ? 9 : 11), 'rgba(255,255,255,0.93)', COLORS.text, align);
+        label(`sin entrar al anillo: ${n.toLocaleString('es-CO')}`, X(p.x), yb + (small ? 9 : 11), 'rgba(255,255,255,0.85)', COLORS.text, align);
       }
 
       // ---------- Overlays ----------

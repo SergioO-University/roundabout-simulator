@@ -474,6 +474,54 @@ globalThis.EMBEDDED_DATA = {
                 -101.4
               ]
             ]
+          },
+          {
+            "id": "conector_ferrocarril",
+            "name": "Desvío a Av. del Ferrocarril",
+            "from": "conector_troncal",
+            "to": "ferrocarril",
+            "lanes": 1,
+            "osm_ways": [
+              549555145
+            ],
+            "path": [
+              [
+                155,
+                55.2
+              ],
+              [
+                129.1,
+                59.9
+              ],
+              [
+                107.6,
+                63.8
+              ],
+              [
+                29.8,
+                86.5
+              ],
+              [
+                13.5,
+                93
+              ],
+              [
+                -2.5,
+                100.1
+              ],
+              [
+                -37.9,
+                118.4
+              ],
+              [
+                -71.8,
+                139.4
+              ],
+              [
+                -103.9,
+                163.1
+              ]
+            ]
           }
         ],
         "signal_phases": null,
@@ -868,49 +916,6 @@ globalThis.EMBEDDED_DATA = {
               [
                 -91.2,
                 -266.8
-              ]
-            ]
-          },
-          {
-            "name": "Salida a Avenida del Ferrocarril",
-            "kind": "road",
-            "lanes": 1,
-            "path": [
-              [
-                155,
-                55.2
-              ],
-              [
-                129.1,
-                59.9
-              ],
-              [
-                107.6,
-                63.8
-              ],
-              [
-                29.8,
-                86.5
-              ],
-              [
-                13.5,
-                93
-              ],
-              [
-                -2.5,
-                100.1
-              ],
-              [
-                -37.9,
-                118.4
-              ],
-              [
-                -71.8,
-                139.4
-              ],
-              [
-                -103.9,
-                163.1
               ]
             ]
           },
@@ -2671,7 +2676,12 @@ globalThis.EMBEDDED_DATA = {
       "max_speed_ms": 7,
       "aggressiveness_factor": 0.4,
       "ring_stop_distance_m": 10,
-      "parallel_motorcycle_entry": true
+      "parallel_motorcycle_entry": true,
+      "parallel_entry_delay_s": [
+        0.3,
+        0.8
+      ],
+      "parallel_entry_delay_note": "A motorcycle entering next to a car goes in this many seconds after it: [most aggressive, least aggressive]. Calibrated with the Conector headways (15th percentile 0.7 s)."
     },
     "signal": {
       "green_s": [
@@ -2888,7 +2898,7 @@ globalThis.EMBEDDED_DATA = {
     "sites": {
       "la_lucha": {
         "site": "Rotonda de La Lucha",
-        "estimate_scale": 0.34,
+        "estimate_scale": 0.53,
         "samples": [
           {
             "file": "2026-11-24_1637_offpeak_conector_troncal.json",
@@ -2903,19 +2913,19 @@ globalThis.EMBEDDED_DATA = {
         ],
         "daily": {
           "ferrocarril": {
-            "motorcycle": 7495,
-            "car": 6378,
-            "bus": 1410
+            "motorcycle": 11683,
+            "car": 9942,
+            "bus": 2198
           },
           "calle31_sur": {
-            "motorcycle": 3747,
-            "car": 3189,
-            "bus": 705
+            "motorcycle": 5841,
+            "car": 4971,
+            "bus": 1099
           },
           "calle31_oriente": {
-            "motorcycle": 3747,
-            "car": 3189,
-            "bus": 705
+            "motorcycle": 5841,
+            "car": 4971,
+            "bus": 1099
           },
           "conector_troncal": {
             "motorcycle": 11022,
@@ -3139,7 +3149,7 @@ globalThis.EMBEDDED_DATA = {
           "Velocidad en los accesos antes de la línea de entrada: no medida; se usa data/parameters.json (vehicles.*.max_speed_ms).",
           "Conector Troncal (nororiente): 22474 vehículos al día, calculados con el conteo de 16:37-16:52 y el perfil de 24 horas.",
           "Av. del Ferrocarril (2 carriles), Calle 31 (sur) (1 carril), Calle 31 (oriente) (1 carril) estimados con el flujo por carril medido aquí.",
-          "Los accesos sin conteo se llevaron al 34 % del flujo por carril medido. Con más tráfico, a las 16:37-16:52 el anillo se llena y Conector Troncal (nororiente) ya no alcanza a entrar lo que se contó en campo.",
+          "Los accesos sin conteo se llevaron al 53 % del flujo por carril medido. Con más tráfico, a las 16:37-16:52 el anillo se llena y Conector Troncal (nororiente) ya no alcanza a entrar lo que se contó en campo.",
           "Distribución a lo largo del día: data/daily-profile.json (tres picos, como el pico y placa de Santa Marta: 7:00–9:00, 11:30–14:00 y 17:00–20:00)."
         ],
         "problems": []
@@ -3150,24 +3160,24 @@ globalThis.EMBEDDED_DATA = {
         "samples": [],
         "daily": {
           "troncal_oriente": {
-            "motorcycle": 10404,
-            "car": 8854,
-            "bus": 1957
+            "motorcycle": 13755,
+            "car": 11705,
+            "bus": 2588
           },
           "via_alterna": {
-            "motorcycle": 5202,
-            "car": 4427,
-            "bus": 979
+            "motorcycle": 6877,
+            "car": 5853,
+            "bus": 1294
           },
           "calle29": {
-            "motorcycle": 10404,
-            "car": 8854,
-            "bus": 1957
+            "motorcycle": 13755,
+            "car": 11705,
+            "bus": 2588
           },
           "troncal_occidente": {
-            "motorcycle": 10404,
-            "car": 8854,
-            "bus": 1957
+            "motorcycle": 13755,
+            "car": 11705,
+            "bus": 2588
           }
         },
         "daily_sources": {
@@ -3325,24 +3335,24 @@ globalThis.EMBEDDED_DATA = {
         "samples": [],
         "daily": {
           "troncal_mamatoco": {
-            "motorcycle": 10404,
-            "car": 8854,
-            "bus": 1957
+            "motorcycle": 13755,
+            "car": 11705,
+            "bus": 2588
           },
           "libertador": {
-            "motorcycle": 10404,
-            "car": 8854,
-            "bus": 1957
+            "motorcycle": 13755,
+            "car": 11705,
+            "bus": 2588
           },
           "troncal_lucha": {
-            "motorcycle": 10404,
-            "car": 8854,
-            "bus": 1957
+            "motorcycle": 13755,
+            "car": 11705,
+            "bus": 2588
           },
           "carrera35": {
-            "motorcycle": 5202,
-            "car": 4427,
-            "bus": 979
+            "motorcycle": 6877,
+            "car": 5853,
+            "bus": 1294
           }
         },
         "daily_sources": {
@@ -3592,6 +3602,17 @@ globalThis.EMBEDDED_DATA = {
             ],
             "lanes": 1,
             "note": "Carrera 15 / Av. del Ferrocarril splits before the roundabout: traffic to the Troncal (Ciénaga) takes this link and never enters the ring."
+          },
+          {
+            "id": "conector_ferrocarril",
+            "name": "Desvío a Av. del Ferrocarril",
+            "from": "conector_troncal",
+            "to": "ferrocarril",
+            "ways": [
+              549555145
+            ],
+            "lanes": 1,
+            "note": "Before the roundabout the Conector Troncal (two-way stretch) has a link straight to Av. del Ferrocarril northbound: traffic from the Conector to the Ferrocarril never enters the ring."
           }
         ]
       },

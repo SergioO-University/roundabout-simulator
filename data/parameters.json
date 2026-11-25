@@ -39,7 +39,12 @@
     "max_speed_ms": 7,
     "aggressiveness_factor": 0.4,
     "ring_stop_distance_m": 10,
-    "parallel_motorcycle_entry": true
+    "parallel_motorcycle_entry": true,
+    "parallel_entry_delay_s": [
+      0.3,
+      0.8
+    ],
+    "parallel_entry_delay_note": "A motorcycle entering next to a car goes in this many seconds after it: [most aggressive, least aggressive]. Calibrated with the Conector headways (15th percentile 0.7 s)."
   },
   "signal": {
     "green_s": [

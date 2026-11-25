@@ -88,7 +88,9 @@ for (const [siteKey, cal] of Object.entries(data.calibration.sites)) {
         }
       }
       const inWindow = (x) => x !== null && x >= e.t0 && x < e.t0 + length;
-      for (const ap of counted) entered[ap] = (entered[ap] || 0) + e.vehicles.filter((v) => v.approach === ap && inWindow(v.t_cross)).length;
+      // A count at the approach includes vehicles that took a slip road there instead of entering the ring.
+      const passed = (v) => (v.t_cross !== null ? v.t_cross : v.t_bypass ?? null);
+      for (const ap of counted) entered[ap] = (entered[ap] || 0) + e.vehicles.filter((v) => v.approach === ap && inWindow(passed(v))).length;
       for (const x of exitTargets) left[x.exit] = (left[x.exit] || 0) + e.vehicles.filter((v) => v.destination === x.exit && inWindow(v.t_exit)).length;
       for (const h of hs) {
         const crossings = e.vehicles.filter((v) => v.approach === h.approach && inWindow(v.t_cross)).map((v) => v.t_cross).sort((a, b) => a - b);
@@ -134,7 +136,7 @@ for (const [siteKey, cal] of Object.entries(data.calibration.sites)) {
       }
     }
     if (counted.length) {
-      console.log(`\n  Vehículos que entran al anillo (${w.time})  medido   simulado   diferencia`);
+      console.log(`\n  Vehículos que pasan por el acceso (${w.time})  medido   simulado   diferencia`);
       for (const ap of counted) {
         const d = cal.daily[ap];
         const obs = TYPES.reduce((sum, ty) => sum + d[ty] * demand.windowShare(ty, w.start, w.end), 0);

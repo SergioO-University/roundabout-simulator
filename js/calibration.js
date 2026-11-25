@@ -267,7 +267,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         for (const v of engine.state.vehicles) {
           if (!measuredAps.includes(v.approach) || v.t_arrival < WARMUP_S || v.t_arrival >= WARMUP_S + (window.end - window.start)) continue;
           arrived++;
-          if (v.t_cross !== null) crossed++;
+          if (v.t_cross !== null || v.t_bypass !== undefined) crossed++; // a count at the approach includes the slip road
         }
       }
       return arrived ? crossed / arrived : 1;

@@ -207,6 +207,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         s.pending.shift();
         v.zone = 'bypass';
         v.state = 'crossing';
+        v.t_bypass = e.t; // went past the roundabout through the slip road (served without entering the ring)
         v.s = 0;
         v.speed = Math.min(v.props.vmax, Math.sqrt(2 * v.props.decel * free));
         s.list.push(v);

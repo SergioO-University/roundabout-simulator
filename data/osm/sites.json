@@ -94,6 +94,17 @@
           ],
           "lanes": 1,
           "note": "Carrera 15 / Av. del Ferrocarril splits before the roundabout: traffic to the Troncal (Ciénaga) takes this link and never enters the ring."
+        },
+        {
+          "id": "conector_ferrocarril",
+          "name": "Desvío a Av. del Ferrocarril",
+          "from": "conector_troncal",
+          "to": "ferrocarril",
+          "ways": [
+            549555145
+          ],
+          "lanes": 1,
+          "note": "Before the roundabout the Conector Troncal (two-way stretch) has a link straight to Av. del Ferrocarril northbound: traffic from the Conector to the Ferrocarril never enters the ring."
         }
       ]
     },
