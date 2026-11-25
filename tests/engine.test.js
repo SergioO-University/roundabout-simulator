@@ -170,12 +170,13 @@ console.log('\n3c. PCA of the scenario comparison');
   const q = Sim.pca(pr, ['Espera', 'Cola', 'Se fueron', 'Atendidos / llegadas', 'Anillo bloqueado'], 'Espera');
   check(q && q.explained[0] + q.explained[1] > 0.6, `17:00-20:00: two axes keep ${Math.round((q.explained[0] + q.explained[1]) * 100)} % of the variation`);
   check(q.loadings.find((l) => l.name === 'Espera').pc1 > 0, 'more wait always points to the right of axis 1');
-  // The reading names as best the mode with the lowest average wait over those hours.
+  // The reading never names as best the mode with the highest average wait over those hours.
+  // (The lowest wait is not enough to be best: a mode that sends more drivers elsewhere also lowers the wait.)
   const meanWait = MODES.map((m, i) => results[i].avg_wait_s);
-  const bestByWait = MODES[meanWait.indexOf(Math.min(...meanWait))];
+  const worstByWait = MODES[meanWait.indexOf(Math.max(...meanWait))];
   const reading = Sim.describePca(q, groups, { current: 'Actual', signal: 'Semáforo', officer: 'Agente' }).join(' ');
-  const bestName = { current: 'Actual', signal: 'Semáforo', officer: 'Agente' }[bestByWait];
-  check(reading.includes(`${bestName} es el que mejor`), `the reading picks ${bestName} as best, the mode with the least wait`);
+  const worstName = { current: 'Actual', signal: 'Semáforo', officer: 'Agente' }[worstByWait];
+  check(!reading.includes(`${worstName} es el que mejor`), `the reading does not pick ${worstName}, the mode with the most wait, as best`);
 }
 
 console.log('\n4. Three-vehicle case (signal mode, test profile)');
