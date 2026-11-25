@@ -2,13 +2,21 @@
 
 Reto No. 3 · Introducción a la Ingeniería de Sistemas 2026-2 · Universidad del Magdalena
 
-> ⚠️ **Estado actual: una muestra real.** La geometría es la real (OpenStreetMap). De La Lucha hay un conteo de campo
-> (Conector Troncal, 16:37–16:52); los demás accesos y las otras dos glorietas están **estimados** a partir de él.
-> Cada toma nueva reemplaza una estimación. Ver "Datos reales" y "Un día completo".
+**Punto estudiado:** Rotonda de La Lucha, con geometría real de OpenStreetMap y **cuatro conteos de campo** (24 de noviembre de 2026), uno por acceso.
+Mamatoco y La Piragua siguen en el simulador solo como referencia: no tienen conteos y su demanda es estimada.
 
 **Equipo:** _(nombre del equipo)_
-**Integrantes y rol:** _(completar)_
-**Prototipo publicado:** _(enlace de GitHub Pages)_
+**Prototipo publicado:** <https://sergioo-university.github.io/roundabout-simulator/>
+
+**Integrantes:**
+- **Sergio Orejarena:** organización del proyecto, desarrollo con la IA (motor, lienzo, calibración, comparador, pruebas y documentos) y conteo del Conector Troncal.
+- **Jose Lopez:** conteo de la Av. del Ferrocarril (entradas y salidas).
+- **Juan Ariza:** conteo de la Calle 31 (oriente) (entradas y salidas).
+- **Oswel Moreno:** conteo de la Calle 31 (sur) en hora pico.
+
+**IA usada:** Claude (Anthropic) para el código, la calibración y los documentos; Gemini (Google AI Studio) para pasar las planillas de conteo a `.json` con `data/field/instrucciones-para-ia.md`.
+
+**Documentos de la entrega** (en `docs/`): anexo de evidencia de campo, diagrama de arquitectura y bitácora de ingeniería.
 
 ## Cómo abrirlo
 
@@ -46,34 +54,22 @@ Cómo se genera:
 Con internet se puede activar **Mapa de fondo** (teselas de CARTO / OpenStreetMap) para ver la glorieta sobre el mapa.
 Sin internet el simulador funciona igual, solo sin el mapa de fondo.
 
-## Cargar los datos de campo
-
-Todo el equipo llena la misma **Planilla de campo** (hoja de cálculo con pestañas Conteos, Giros, Bloqueos, Tiempos, Brazos y Fallos IA). Después:
-
-1. Descargarla como Excel y guardarla como `data/field/planilla-campo.xlsx`.
-2. `node tools/import-field-data.js` — revisa errores y escribe `data/counts.json` (conteos, giros y bloqueos). También imprime las velocidades promedio medidas y las diferencias de carriles o nombres con `data/osm/sites.json`, para corregirlas a mano.
-3. `node tools/embed-data.js` y `node tests/engine.test.js`.
-
-Con `--dry-run` revisa la planilla sin escribir nada.
-
 ## Datos reales (muestras de campo)
 
 Cada toma de campo se guarda como un archivo en `data/samples/<glorieta>/` y no se edita.
 
-### Agregar una muestra (sin correr nada)
+### Agregar una muestra
 
-1. Guarden el `.json` en `data/samples/la_lucha/` con el nombre `AAAA-MM-DD_HHMM_<perfil>_<lugar>.json`.
-2. Hagan commit y push a `main`. También pueden subirlo desde la web de GitHub con *Add file → Upload files*.
+1. Guarden el `.json` en `data/samples/la_lucha/` con un nombre simple: `<acceso>_entrada.json`, o `<acceso>_entrada_salida.json` si trae salidas (por ejemplo `ferrocarril_entrada_salida.json`).
+2. Regeneren la calibración y la copia sin internet, y corran las pruebas:
 
-GitHub Actions (`.github/workflows/calibration.yml`) hace el resto en un par de minutos:
-- regenera la calibración y la guarda en el repo con un commit automático;
-- corre las pruebas;
-- compara con lo medido (en la pestaña *Actions*, dentro de la ejecución; lo que pase de ±15 % aparece como advertencia);
-- publica la página.
-
-Para ver los cambios en su computador, hagan `git pull`.
-
-**Configuración única:** en el repo, *Settings → Pages → Build and deployment → Source*, elijan **GitHub Actions**. Antes se publicaba desde la rama, y eso no se entera de los commits automáticos.
+   ```bash
+   node tools/build-calibration.js
+   node tools/embed-data.js
+   node tests/engine.test.js
+   node tools/check-calibration.js
+   ```
+3. Hagan commit y push a `main`. GitHub Pages publica la página desde la rama.
 
 ### Probar una muestra sin subirla
 
@@ -85,28 +81,30 @@ En la tarjeta **Datos reales** del simulador, arrastren los `.json` o usen **Ele
 
 ### Cómo se combinan
 
-`js/calibration.js` combina todas las muestras en `data/calibration.json`, que es lo que usa el simulador. Lo corre GitHub Actions, el botón de la página o, a mano, `node tools/build-calibration.js`.
+`js/calibration.js` combina todas las muestras en `data/calibration.json`, que es lo que usa el simulador. Lo corren `node tools/build-calibration.js` y el botón "Probar muestras" de la página.
 
 - **Conteos medidos:** cada conteo se ubica en su hora real (`time`, por ejemplo `16:37-16:52`) y se convierte en **vehículos por día** con el perfil de 24 horas (ver "Un día completo"). Si hay varias tomas del mismo acceso, se promedian.
 - **Conteos estimados:** los accesos que aún no tienen toma se estiman a partir de lo medido. En orden de preferencia:
   1. El flujo diario medido por carril de entrada en la misma glorieta × los carriles del acceso (`entry_lanes` en `data/osm/sites.json`).
   2. El flujo típico por carril de las otras glorietas con datos. Así se estiman Mamatoco y La Piragua mientras no tengan tomas propias.
-- **Tope de la estimación:** el script simula la ventana del conteo (modo actual, como en campo) y baja los accesos estimados hasta que el acceso medido logra entrar lo que se contó. Hoy ese tope deja los accesos sin conteo de La Lucha en el 53 % del flujo por carril del Conector. Es un límite superior: dice cuánto tráfico cabe como máximo, no cuánto hay; si traen más, a las 16:37 el anillo se llena y el Conector ya no alcanza a descargar sus 336 vehículos.
-- **Giros:** la proporción medida se respeta, y lo que falta se reparte según los giros supuestos.
+- **Tope de la estimación:** si un acceso se estima en la misma glorieta, el script baja la estimación hasta que los accesos medidos logran entrar lo que se contó. Hoy en La Lucha no queda ningún acceso estimado.
+- **Giros:** la proporción medida se respeta (49 % del Conector hacia la Av. del Ferrocarril). El resto se ajusta para que, en la ventana de cada conteo de salida, salga por la Av. del Ferrocarril y por la Calle 31 (oriente) lo que se contó; lo demás conserva las proporciones supuestas.
 - **Velocidades:** las medidas en el anillo y en las salidas, por tipo de vehículo, fijan la velocidad que usa el simulador en esos tramos.
 - **En pantalla:** cada conteo aparece como **medido**, **estimado** o **supuesto**, en la tarjeta "Datos reales" y en la tabla de accesos.
 
 `node tools/check-calibration.js` simula cada ventana medida, en su hora real y con 10 minutos previos para que la glorieta no arranque vacía, y compara con lo medido:
 - velocidades;
 - tiempos entre vehículos que entran;
-- vehículos que logran entrar al anillo en esa ventana.
+- vehículos que logran entrar al anillo en esa ventana;
+- vehículos que salen por cada salida contada.
 
 El formato de las muestras está en `data/samples/README.md`.
 
-### Parámetros calibrados con la primera muestra
+### Parámetros calibrados con las muestras
 
 - **Tiempo de seguimiento (`follow_up_s`):** 1,8 s para motos, 2,8 s para carros y 3,8 s para busetas. Es el tiempo mínimo que deja un conductor en fila después de que entra el de adelante, y se reduce para los conductores más agresivos. Con estos valores, la mediana simulada del tiempo entre entradas (2,4 s) es igual a la medida.
 - **Entrada en paralelo (`roundabout.parallel_motorcycle_entry` y `parallel_entry_delay_s`):** si en la línea hay una moto al lado de un carro, la moto entra entre 0,3 y 0,8 s después y circulan lado a lado hasta separarse. Con esto el percentil 15 simulado (0,7 s) es igual al medido.
+- **Elección de carril en accesos de 2 carriles (`roundabout.lane_choice`):** quien sale antes del 25 % de la vuelta va por la derecha, quien va más allá del 75 % por la izquierda, y el resto escoge el carril con menos fila. Con esto la Av. del Ferrocarril deja entrar lo contado (713 de 733).
 
 ## Un día completo
 
@@ -141,15 +139,16 @@ El perfil no es un conteo de 24 horas en La Lucha, porque no encontramos uno pú
 
 ### Lo que muestra hoy (La Lucha, día completo, semilla 2026)
 
-| Modo | Espera promedio | Se fueron por otra ruta | En cola a medianoche |
+| Modo | Espera promedio | Atendidos en el día | Se fueron por otra ruta |
 |---|---|---|---|
-| Actual | 174 s | 2.695 | 0 |
-| Semáforo | 443 s | 8.274 | 2 |
-| Agente | 813 s | 26.453 | 3 |
+| Actual | 650 s | 87.865 | 25.370 |
+| Semáforo | 691 s | 53.912 | 59.322 |
+| Agente | 879 s | 32.133 | 81.035 |
 
-- **Los desvíos pesan mucho.** Unos 21.700 vehículos al día pasan sin entrar al anillo: 11.000 por el desvío Conector → Av. del Ferrocarril y 10.700 por el desvío Av. del Ferrocarril → Troncal (Ciénaga).
-- **Hoy la espera más alta está en la Av. del Ferrocarril**, pero es un acceso *estimado* al tope máximo (53 % del flujo por carril del Conector). Es el acceso que más urge contar.
-- **Semáforo y agente** usan tiempos pensados para los volúmenes de prueba. Ajustar los verdes y los turnos a la demanda del día es parte del análisis del equipo.
+- **El flujo libre (Actual) es mejor en todo**, y los turnos de agente son lo peor: atienden menos de la mitad de los vehículos. En la ventana de 14:22–14:37, la mejor calibrada, la espera es de 104 s en modo Actual, 479 s con semáforo y 641 s con agente.
+- **Los desvíos directos** sacan unos 22.300 vehículos al día sin entrar al anillo.
+- **Qué tan fiel es:** las dos tomas casi simultáneas (14:22–14:46) quedan dentro de ±3 % al entrar (Ferrocarril −3 %, Calle 31 oriente +1 %), y la salida por la Ferrocarril queda en −6 % y la de la Calle 31 (oriente) en −18 %. Las dos tomas de la tarde no se reproducen: a las 16:37 el Conector deja entrar 210 de 336 y a las 17:30 la Calle 31 (sur) 52 de 212. A esas horas el perfil público sube entre un 22 % y un 50 % el tráfico de la Ferrocarril y la Calle 31 (oriente), y ese flujo tapa las demás entradas. Para saber si el perfil exagera la tarde en este punto haría falta contar todos los accesos a la misma hora.
+- **Semáforo y agente** usan tiempos fijos (verde 30 s / 20 s; turnos de 40 s), sin ajustar a la demanda del día.
 
 ### Desvío por congestión
 
@@ -228,7 +227,7 @@ El documento del reto sugiere nombres en español; esta tabla muestra a qué arc
 | `js/demand.js` | — | Demanda del día: convierte conteos en vehículos por día y los reparte en bloques de 15 min con el perfil de 24 h. |
 | `js/pca.js` | — | Análisis de componentes principales (PCA) para el mapa de escenarios del comparador. |
 | `js/charts.js` | — | Gráficas SVG del comparador: líneas en el tiempo, barras por acceso y mapa PCA. |
-| `js/calibration.js` | — | Reglas de calibración: medido, estimado y supuesto. Lo usan el script, GitHub Actions y el botón "Probar muestras". |
+| `js/calibration.js` | — | Reglas de calibración: medido, estimado y supuesto, y giros ajustados a las salidas contadas. Lo usan el script y el botón "Probar muestras". |
 | `js/app.js` | — | Conecta los botones y el tablero con el motor. |
 | `data/geometry.json` | `geometria.json` | Forma del anillo y de cada entrada y salida (generado desde OpenStreetMap), carriles y capacidad de las salidas (hoy sin límite). |
 | `data/osm/sites.json` | — | Qué vías de OpenStreetMap forman cada brazo, nombres, carriles y capacidades (editable). |
@@ -240,15 +239,14 @@ El documento del reto sugiere nombres en español; esta tabla muestra a qué arc
 | `tests/engine.test.js` | — | Pruebas automáticas del motor. |
 | `tools/embed-data.js` | — | Regenera `data/embedded-data.js`. |
 | `tools/build-calibration.js` | — | Combina las muestras reales de `data/samples/` en `data/calibration.json` y `data/samples/index.json`. |
-| `tools/check-calibration.js` | — | Compara la simulación con lo medido (velocidades, tiempos entre vehículos y vehículos que entran) y marca lo que pase de ±15 %. |
-| `.github/workflows/calibration.yml` | — | GitHub Actions: con cada push regenera la calibración, corre pruebas y publica la página. |
+| `tools/check-calibration.js` | — | Compara la simulación con lo medido (velocidades, tiempos entre vehículos, vehículos que entran y que salen) y marca lo que pase de ±15 %. |
 | `data/samples/` | — | Una carpeta por punto con las tomas de campo, una por archivo. |
 | `data/calibration.json` | — | Generado: datos reales combinados con los estimados y los supuestos. |
 | `data/samples/index.json` | — | Generado: todas las muestras juntas, para que la página pueda recalcular. |
-| `tools/import-field-data.js` | — | Importa la planilla de campo (.xlsx) a `data/counts.json`. |
-| `data/field/` | — | Aquí va `planilla-campo.xlsx`. |
+| `tools/import-field-data.js` | — | Importador de una planilla .xlsx a `data/counts.json` (alternativa; el equipo usó las muestras `.json`). |
+| `data/field/` | — | Instrucciones para pasar los conteos a `.json` con IA y plantilla de muestra. |
 | `tools/build-geometry.js` | — | Genera `data/geometry.json` desde OpenStreetMap y `data/osm/sites.json`. |
-| `docs/` | `documentos/` | PDF de la entrega. |
+| `docs/` | `documentos/` | PDF de la entrega: anexo de campo, diagrama de arquitectura y bitácora. |
 
 ### Equivalencias en los datos
 
@@ -284,11 +282,11 @@ muestra también "vehículos aún en cola al final".
 ## Simplificaciones del modelo
 
 - **Anillo de 2 carriles** (`ring_lanes`):
-  - el que va a salir pronto (menos del 40 % de la vuelta) usa el carril externo; el resto usa el interno;
+  - desde un acceso de 1 carril, el que va a salir pronto (menos del 40 % de la vuelta) usa el carril externo y el resto el interno;
   - cada vehículo sigue al de adelante en su carril;
   - quien entra al carril externo espera hueco solo en ese carril; quien va al interno, en los dos;
   - los vehículos del carril interno salen directo: el cruce con el carril externo al salir no se modela.
-- **Accesos de 2 carriles** (como la Av. del Ferrocarril): dos filas independientes. La derecha entra al carril externo y la izquierda al interno, y pueden entrar a la vez.
+- **Accesos de 2 carriles** (como la Av. del Ferrocarril): dos filas independientes. La derecha entra al carril externo y la izquierda al interno, y pueden entrar a la vez. Cada vehículo escoge fila según su salida y, si puede ir por cualquiera, la más corta (`roundabout.lane_choice`).
 - **Accesos de 1 carril:** una fila más un carril de filtrado para motos. Una moto puede entrar al lado de un carro, y en el anillo van lado a lado hasta separarse.
 - Se modelan unos 130 m de cada entrada y 90 m de cada salida.
 - **Desvíos** (`bypasses` en `data/osm/sites.json`). En La Lucha hay dos vías que salen antes de la glorieta y nunca entran al anillo:
@@ -323,14 +321,10 @@ Revisa lo siguiente:
 
 Al final compara los tres modos en el día completo de cada glorieta (unos 40 s en total).
 
-## Pendiente con los datos reales
+Hoy fallan dos comprobaciones: el Conector a las 16:37 y la Calle 31 (sur) a las 17:30 no alcanzan a entrar lo que se contó. La razón está en "Lo que muestra hoy".
 
-- [ ] Elegir **un** punto (recomendado: La Lucha) y dejarlo en `active_site` de `data/osm/sites.json`.
-- [ ] Croquis → revisar en `data/osm/sites.json` que los brazos, nombres y carriles coincidan con lo visto en campo; regenerar con `node tools/build-geometry.js`.
-- [ ] Llenar la planilla de campo e importarla con `node tools/import-field-data.js` (conteos, giros y bloqueos).
-- [ ] Bloqueos observados → fijar `exit_capacity_vph` (en `data/osm/sites.json`) hasta que el modo Actual reproduzca lo visto.
-- [ ] Contar al menos otro acceso de La Lucha (idealmente Av. del Ferrocarril) y, si se puede, una hora pico, para afinar el perfil del día.
-- [ ] Ajustar los verdes del semáforo y los turnos del agente a la demanda del día antes de comparar.
-- [ ] Revisar y justificar `parameters.json`, y observar si el agente da paso a dos accesos a la vez (`officer.groups`).
-- [ ] `node tools/build-geometry.js`, `node tools/embed-data.js` y `node tests/engine.test.js`.
-- [ ] Comparación final y conclusión con cifras en la bitácora.
+## Posibles mejoras
+
+- Contar los cuatro accesos a la misma hora, en valle y en pico, para comprobar el perfil del día en La Lucha.
+- Contar los giros de cada acceso (hoy solo está medido el del Conector).
+- Ajustar los verdes del semáforo y los turnos del agente a la demanda del día.
