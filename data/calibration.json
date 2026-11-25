@@ -3,7 +3,7 @@
   "sites": {
     "la_lucha": {
       "site": "Rotonda de La Lucha",
-      "estimate_scale": 0.53,
+      "estimate_scale": 0.1,
       "samples": [
         {
           "file": "2026-11-24_1637_offpeak_conector_troncal.json",
@@ -14,23 +14,37 @@
             "velocidades en la salida Av. del Ferrocarril",
             "intervalos de entrada en Conector Troncal (nororiente)"
           ]
+        },
+        {
+          "file": "calle31_oriente_entrada_salida.json",
+          "measured": [
+            "salen por Calle 31 (oriente) (14:22-14:37)",
+            "conteo Calle 31 (oriente) (14:22-14:37, 2026-11-24)"
+          ]
+        },
+        {
+          "file": "ferrocarril_entrada_salida.json",
+          "measured": [
+            "salen por Av. del Ferrocarril (14:31-14:46)",
+            "conteo Av. del Ferrocarril (14:31-14:46, 2026-11-24)"
+          ]
         }
       ],
       "daily": {
         "ferrocarril": {
-          "motorcycle": 11683,
-          "car": 9942,
-          "bus": 2198
+          "motorcycle": 41053,
+          "car": 16456,
+          "bus": 1755
         },
         "calle31_sur": {
-          "motorcycle": 5841,
-          "car": 4971,
-          "bus": 1099
+          "motorcycle": 2070,
+          "car": 929,
+          "bus": 99
         },
         "calle31_oriente": {
-          "motorcycle": 5841,
-          "car": 4971,
-          "bus": 1099
+          "motorcycle": 30724,
+          "car": 11306,
+          "bus": 144
         },
         "conector_troncal": {
           "motorcycle": 11022,
@@ -40,9 +54,9 @@
       },
       "daily_sources": {
         "ferrocarril": {
-          "motorcycle": "estimated",
-          "car": "estimated",
-          "bus": "estimated"
+          "motorcycle": "measured",
+          "car": "measured",
+          "bus": "measured"
         },
         "calle31_sur": {
           "motorcycle": "estimated",
@@ -50,9 +64,9 @@
           "bus": "estimated"
         },
         "calle31_oriente": {
-          "motorcycle": "estimated",
-          "car": "estimated",
-          "bus": "estimated"
+          "motorcycle": "measured",
+          "car": "measured",
+          "bus": "measured"
         },
         "conector_troncal": {
           "motorcycle": "measured",
@@ -68,6 +82,22 @@
           "date": "2026-11-24",
           "start": 59820,
           "end": 60720
+        },
+        {
+          "approach": "calle31_oriente",
+          "file": "calle31_oriente_entrada_salida.json",
+          "time": "14:22-14:37",
+          "date": "2026-11-24",
+          "start": 51720,
+          "end": 52620
+        },
+        {
+          "approach": "ferrocarril",
+          "file": "ferrocarril_entrada_salida.json",
+          "time": "14:31-14:46",
+          "date": "2026-11-24",
+          "start": 52260,
+          "end": 53160
         }
       ],
       "turning": {
@@ -246,15 +276,46 @@
             "end": 60720
           }
         ],
-        "exit_counts": []
+        "exit_counts": [
+          {
+            "sample": "calle31_oriente_entrada_salida.json",
+            "exit": "calle31_oriente",
+            "window": {
+              "time": "14:22-14:37",
+              "start": 51720,
+              "end": 52620
+            },
+            "counts": {
+              "motorcycle": 453,
+              "car": 203,
+              "bus": 15
+            }
+          },
+          {
+            "sample": "ferrocarril_entrada_salida.json",
+            "exit": "ferrocarril",
+            "window": {
+              "time": "14:31-14:46",
+              "start": 52260,
+              "end": 53160
+            },
+            "counts": {
+              "motorcycle": 249,
+              "car": 203,
+              "bus": 11
+            }
+          }
+        ]
       },
       "assumptions": [
         "Giros de Conector Troncal (nororiente): medido 49 % hacia Av. del Ferrocarril; el 51 % restante se reparte entre Salida a Troncal (Ciénaga), Calle 31 (sur), Calle 31 (oriente), Conector Troncal (nororiente) en las proporciones supuestas.",
         "Velocidad en las salidas: medida solo en Av. del Ferrocarril; las demás salidas usan ese mismo promedio.",
         "Velocidad en los accesos antes de la línea de entrada: no medida; se usa data/parameters.json (vehicles.*.max_speed_ms).",
+        "Av. del Ferrocarril: 59264 vehículos al día, calculados con el conteo de 14:31-14:46 y el perfil de 24 horas.",
+        "Calle 31 (oriente): 42174 vehículos al día, calculados con el conteo de 14:22-14:37 y el perfil de 24 horas.",
         "Conector Troncal (nororiente): 22474 vehículos al día, calculados con el conteo de 16:37-16:52 y el perfil de 24 horas.",
-        "Av. del Ferrocarril (2 carriles), Calle 31 (sur) (1 carril), Calle 31 (oriente) (1 carril) estimados con el flujo por carril medido aquí.",
-        "Los accesos sin conteo se llevaron al 53 % del flujo por carril medido. Con más tráfico, a las 16:37-16:52 el anillo se llena y Conector Troncal (nororiente) ya no alcanza a entrar lo que se contó en campo.",
+        "Calle 31 (sur) (1 carril) estimado con el flujo por carril medido aquí.",
+        "Los accesos sin conteo se llevaron al 10 % del flujo por carril medido. Con más tráfico, a las 16:37-16:52 el anillo se llena y Av. del Ferrocarril, Calle 31 (oriente), Conector Troncal (nororiente) ya no alcanza a entrar lo que se contó en campo.",
         "Distribución a lo largo del día: data/daily-profile.json (tres picos, como el pico y placa de Santa Marta: 7:00–9:00, 11:30–14:00 y 17:00–20:00)."
       ],
       "problems": []
@@ -265,24 +326,24 @@
       "samples": [],
       "daily": {
         "troncal_oriente": {
-          "motorcycle": 13755,
-          "car": 11705,
-          "bus": 2588
+          "motorcycle": 33948,
+          "car": 15228,
+          "bus": 1628
         },
         "via_alterna": {
-          "motorcycle": 6877,
-          "car": 5853,
-          "bus": 1294
+          "motorcycle": 16974,
+          "car": 7614,
+          "bus": 814
         },
         "calle29": {
-          "motorcycle": 13755,
-          "car": 11705,
-          "bus": 2588
+          "motorcycle": 33948,
+          "car": 15228,
+          "bus": 1628
         },
         "troncal_occidente": {
-          "motorcycle": 13755,
-          "car": 11705,
-          "bus": 2588
+          "motorcycle": 33948,
+          "car": 15228,
+          "bus": 1628
         }
       },
       "daily_sources": {
@@ -440,24 +501,24 @@
       "samples": [],
       "daily": {
         "troncal_mamatoco": {
-          "motorcycle": 13755,
-          "car": 11705,
-          "bus": 2588
+          "motorcycle": 33948,
+          "car": 15228,
+          "bus": 1628
         },
         "libertador": {
-          "motorcycle": 13755,
-          "car": 11705,
-          "bus": 2588
+          "motorcycle": 33948,
+          "car": 15228,
+          "bus": 1628
         },
         "troncal_lucha": {
-          "motorcycle": 13755,
-          "car": 11705,
-          "bus": 2588
+          "motorcycle": 33948,
+          "car": 15228,
+          "bus": 1628
         },
         "carrera35": {
-          "motorcycle": 6877,
-          "car": 5853,
-          "bus": 1294
+          "motorcycle": 16974,
+          "car": 7614,
+          "bus": 814
         }
       },
       "daily_sources": {
