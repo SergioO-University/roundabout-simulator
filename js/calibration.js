@@ -453,6 +453,43 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         );
       }
       const { daily, dailySources, notes } = buildCounts(k);
+      // ---------- Turning fitted to the measured exits ----------
+      // The assumed shares are scaled (iterative proportional fitting) until, in each counted exit window,
+      // the demand of every approach × its share to that exit gives what was counted leaving there.
+      // Measured shares are never changed.
+      const exitObs = exitCounts
+        .map((o) => ({ exit: o.exit, start: o.window.start, end: o.window.end, n: TYPES.reduce((sum, ty) => sum + (isNum(o.counts[ty]) ? o.counts[ty] : 0), 0) }))
+        .filter((o) => o.n > 0 && exits.includes(o.exit));
+      if (exitObs.length) {
+        const inWindow = (ap, o) => TYPES.reduce((sum, ty) => sum + daily[ap][ty] * demand.windowShare(ty, o.start, o.end), 0);
+        for (let iter = 0; iter < 200; iter++) {
+          for (const o of exitObs) {
+            const pred = entries.reduce((sum, ap) => sum + inWindow(ap, o) * turning[ap][o.exit], 0);
+            if (pred <= 0) continue;
+            const f = o.n / pred;
+            for (const ap of entries) {
+              if (turningSources[ap][o.exit] === 'measured') continue;
+              const fixed = exits.filter((d) => turningSources[ap][d] === 'measured').reduce((sum, d) => sum + turning[ap][d], 0);
+              const others = exits.filter((d) => d !== o.exit && turningSources[ap][d] !== 'measured');
+              const share = Math.min(Math.max(0, 1 - fixed) * 0.98, turning[ap][o.exit] * f);
+              const rest = others.reduce((sum, d) => sum + turning[ap][d], 0);
+              const target = Math.max(0, 1 - fixed - share);
+              turning[ap][o.exit] = share;
+              for (const d of others) turning[ap][d] = rest > 0 ? (turning[ap][d] * target) / rest : target / others.length;
+            }
+          }
+        }
+        for (const ap of entries) {
+          for (const d of exits) {
+            turning[ap][d] = r3(turning[ap][d]);
+            if (turningSources[ap][d] !== 'measured') turningSources[ap][d] = 'fitted to exit counts';
+          }
+        }
+        assumptions.push(
+          `Giros ajustados para que salga lo contado por ${[...new Set(exitObs.map((o) => nameOf[o.exit]))].join(' y ')}; ` +
+            `los giros medidos no cambian y el resto conserva las proporciones supuestas.`,
+        );
+      }
       for (const ap of entries) {
         if (measuredAll(countObs, ap)) {
           const ws = windows.filter((w) => w.approach === ap).map((w) => w.time);
