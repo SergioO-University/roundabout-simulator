@@ -29,11 +29,13 @@
             <button id="btn-play" class="primary">▶ Iniciar</button>
             <button id="btn-reset" title="Reiniciar la corrida con la misma semilla">↺</button>
             <div class="segmented" id="speeds">
-              <button data-speed="1">×1</button>
-              <button data-speed="5">×5</button>
+              <button data-speed="1" title="Tiempo real">×1</button>
               <button data-speed="10">×10</button>
+              <button data-speed="60" title="1 minuto por segundo">×60</button>
+              <button data-speed="300" title="5 minutos por segundo">×300</button>
+              <button data-speed="1200" title="20 minutos por segundo: el día completo en 72 s">×1200</button>
             </div>
-            <span class="clock" id="clock">0:00</span>
+            <span class="clock" id="clock" title="Hora del día simulada">00:00:00</span>
             <span class="phase" id="phase-info" hidden></span>
           </div>
 
@@ -53,10 +55,19 @@
           </div>
         </div>
 
+        <div class="daybar">
+          <div class="daybar-head">
+            <span class="period" id="day-period">—</span>
+            <span class="note" id="day-note">Barras: vehículos por hora (gris: demanda del día; color: ya llegaron) · línea roja: espera promedio de cada hora · clic en el gráfico para ir a esa hora</span>
+            <label class="goto">Ir a <select id="sel-hour"></select></label>
+          </div>
+          <canvas id="day-chart" aria-label="Demanda y espera a lo largo del día"></canvas>
+        </div>
+
         <div class="kpi-strip">
           <div class="kpi"><span class="value" id="kpi-discharge">0</span><span class="caption">veh/min · evacuación último minuto</span></div>
-          <div class="kpi"><span class="value" id="kpi-wait">0</span><span class="caption">s · espera promedio</span></div>
-          <div class="kpi"><span class="value" id="kpi-queue">0</span><span class="caption">veh · cola máxima</span></div>
+          <div class="kpi"><span class="value" id="kpi-wait">0</span><span class="caption" id="kpi-wait-caption">s · espera promedio esta hora</span></div>
+          <div class="kpi"><span class="value" id="kpi-queue">0</span><span class="caption" id="kpi-queue-caption">veh · en cola ahora</span></div>
           <div class="kpi"><span class="value" id="kpi-blocked">0</span><span class="caption">s · anillo bloqueado</span></div>
           <p class="extra" id="extra-metrics"></p>
         </div>
@@ -75,10 +86,9 @@
               <select id="sel-site"></select>
             </label>
             <div class="row2">
-              <label>Perfil de demanda
+              <label>Demanda
                 <select id="sel-profile">
-                  <option value="peak">Hora pico</option>
-                  <option value="offpeak">Hora valle</option>
+                  <option value="day">Día completo (24 h)</option>
                   <option value="test">Caso de prueba (3 vehículos)</option>
                 </select>
               </label>
@@ -102,11 +112,34 @@
             <p id="phase-warnings" class="warning-box" hidden></p>
           </div>
 
+          <div class="card" id="real-data-card" hidden>
+            <h2>Datos reales</h2>
+            <p class="note" id="real-data-summary"></p>
+            <details class="details">
+              <summary>Muestras cargadas</summary>
+              <ul id="real-data-samples" class="list"></ul>
+            </details>
+            <details class="details">
+              <summary>Estimaciones y supuestos mientras llegan más datos</summary>
+              <ul id="real-data-assumptions" class="list"></ul>
+            </details>
+            <div class="drop" id="sample-drop">
+              <b>Probar muestras sin subirlas</b>
+              <p class="note">Arrastren aquí archivos .json de campo (mismo formato de <code>data/samples/</code>) o elíjanlos. Se recalcula todo en este navegador; no se guarda en el repo.</p>
+              <div class="button-row">
+                <button type="button" id="btn-pick-samples">Elegir archivos .json</button>
+                <button type="button" id="btn-clear-samples" hidden>Quitar muestras locales</button>
+              </div>
+              <input type="file" id="sample-input" accept=".json,application/json" multiple hidden>
+              <p class="note" id="sample-msg" hidden></p>
+            </div>
+          </div>
+
           <div class="card">
             <h2>Accesos</h2>
             <table class="table" id="approach-table">
               <thead>
-                <tr><th>Acceso</th><th>Cola</th><th>Máx</th><th>Espera</th><th title="Llegadas en los primeros 15 min simulados frente a lo contado en campo">Llegadas 15 min</th></tr>
+                <tr><th>Acceso</th><th>Cola</th><th>Máx</th><th>Espera</th><th title="Vehículos que han llegado hoy frente a la demanda del día completo">Llegadas hoy</th></tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -116,7 +149,16 @@
         <div class="tab-body" id="tab-cmp" hidden>
           <div class="card">
             <h2>Comparador</h2>
-            <p class="note">Corre dos modos con la misma semilla y el mismo perfil durante 15 minutos simulados, sin dibujar. Usa el punto, el perfil y la semilla de la pestaña Simulación.</p>
+            <p class="note">Corre dos modos con la misma semilla y las mismas llegadas, sin dibujar. Usa el punto y la semilla de la pestaña Simulación. El día completo tarda unos segundos por modo.</p>
+            <label>Franja
+              <select id="cmp-window">
+                <option value="day">Día completo (00:00–24:00)</option>
+                <option value="07:00-09:00">Hora pico de la mañana (07:00–09:00)</option>
+                <option value="11:30-14:00">Hora pico del mediodía (11:30–14:00)</option>
+                <option value="17:00-20:00">Hora pico de la tarde (17:00–20:00)</option>
+                <option value="09:00-11:30">Valle de la mañana (09:00–11:30)</option>
+              </select>
+            </label>
             <div class="row2 equal">
               <label>Modo A <select id="cmp-a"></select></label>
               <label>Modo B <select id="cmp-b"></select></label>
@@ -133,18 +175,21 @@
           <div class="card">
             <h2>Exportar</h2>
             <button id="exp-veh-csv" class="wide">Vehículos de la corrida actual (CSV)</button>
+            <button id="exp-hour-csv" class="wide">Resumen por hora de la corrida actual (CSV)</button>
           </div>
         </div>
       </aside>
     </main>
 
     <script src="data/embedded-data.js"></script>
+    <script src="js/demand.js"></script>
     <script src="js/geometry.js"></script>
     <script src="js/arrivals.js"></script>
     <script src="js/control.js"></script>
     <script src="js/vehicles.js"></script>
     <script src="js/metrics.js"></script>
     <script src="js/engine.js"></script>
+    <script src="js/calibration.js"></script>
     <script src="js/icons.js"></script>
     <script src="js/renderer.js"></script>
     <script src="js/data.js"></script>

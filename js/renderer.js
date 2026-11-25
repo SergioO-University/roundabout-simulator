@@ -55,6 +55,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
     let ctx = canvas.getContext('2d');
     let layer = null;
     const lastSpeed = new WeakMap(); // previous drawn speed of each vehicle, to light up brake lights
+    const drawLat = new WeakMap(); // drawn lateral position on the ring, eased towards its lane
     const view = { zoom: 1, panX: 0, panY: 0, fitFor: null, baseScale: 1, centerX: 0, centerY: 0 };
     const tiles = new Map();
     // insets: room taken by the toolbars (top) and the legend (bottom) when they float over the canvas.
@@ -174,7 +175,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       const cy = h / 2 + view.panY;
       const X = (x) => cx + (x - view.centerX) * scale;
       const Y = (y) => cy - (y - view.centerY) * scale;
-      const W = geo.W;
+      const W = geo.drawW || geo.W; // drawn lane width (see geometry.js)
 
       // ---------- Map background ----------
       const showTiles = renderer.mapTiles && geo.center;
@@ -210,6 +211,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
           if (a.hasEntry) strokePath(a.entryPath.pts, a.nIn * W + 2, COLORS.border);
           if (a.hasExit) strokePath(a.exitPath.pts, a.nOut * W + 2, COLORS.border);
         }
+        for (const b of geo.bypasses) strokePath(b.path.pts, b.lanes * W + 2, COLORS.border);
         strokePath(geo.ring.pts, geo.ringWidth + 2, COLORS.border);
       }
       fillPolygon(geo.ringPoints, COLORS.island);
@@ -217,6 +219,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         if (a.hasEntry) strokePath(a.entryPath.pts, a.nIn * W, asphalt);
         if (a.hasExit) strokePath(a.exitPath.pts, a.nOut * W, asphalt);
       }
+      for (const b of geo.bypasses) strokePath(b.path.pts, b.lanes * W, asphalt);
       strokePath(geo.ring.pts, geo.ringWidth, asphalt);
 
       if (showTiles) {
@@ -266,7 +269,15 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       const alerts = [];
       for (const v of e.vehicles) {
         if (v.zone === 'pending' || v.zone === 'gone') continue;
-        const p = Sim.vehiclePosition(geo, v);
+        // Lane changes on the ring are drawn gradually (vehicles come in from the outer side).
+        let lat;
+        if (v.zone === 'ring') {
+          const target = Sim.ringLane(geo, v);
+          const prevLat = drawLat.get(v);
+          lat = prevLat === undefined ? geo.ringOuterLat : prevLat + (target - prevLat) * 0.12;
+          drawLat.set(v, lat);
+        }
+        const p = Sim.vehiclePosition(geo, v, lat);
         if (!p) continue;
         const prev = lastSpeed.get(v);
         lastSpeed.set(v, v.speed);
@@ -336,6 +347,15 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
           const p = Sim.pointAt(a.exitPath, Math.min(a.exitPath.length, 45), (a.nOut * W) / 2 + 5);
           label(`${a.name} · solo salida`, X(p.x), Y(p.y), 'rgba(255,255,255,0.93)', COLORS.text);
         }
+      }
+
+      // Slip roads: name and how many vehicles took them (they never enter the ring).
+      for (const b of geo.bypasses) {
+        const p = Sim.pointAt(b.path, b.length * 0.55, -(b.lanes * W) / 2 - 6);
+        const yb = Math.max(renderer.insets.top + 12, Math.min(h - renderer.insets.bottom - 12, Y(p.y)));
+        const n = e.metrics.bypassedTotal;
+        label(b.name, X(p.x), yb - (small ? 9 : 11), 'rgba(255,255,255,0.93)', COLORS.text, 'right');
+        label(`sin entrar al anillo: ${n.toLocaleString('es-CO')}`, X(p.x), yb + (small ? 9 : 11), 'rgba(255,255,255,0.85)', COLORS.text, 'right');
       }
 
       // ---------- Overlays ----------
