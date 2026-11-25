@@ -2681,7 +2681,12 @@ globalThis.EMBEDDED_DATA = {
         0.3,
         0.8
       ],
-      "parallel_entry_delay_note": "A motorcycle entering next to a car goes in this many seconds after it: [most aggressive, least aggressive]. Calibrated with the Conector headways (15th percentile 0.7 s)."
+      "parallel_entry_delay_note": "A motorcycle entering next to a car goes in this many seconds after it: [most aggressive, least aggressive]. Calibrated with the Conector headways (15th percentile 0.7 s).",
+      "lane_choice": {
+        "right_only_below": 0.25,
+        "left_only_above": 0.75
+      },
+      "lane_choice_note": "Two-lane approaches: trips shorter than this share of the ring keep right (outer ring lane), longer ones keep left (inner lane); in between, drivers join the lane with fewer vehicles."
     },
     "signal": {
       "green_s": [
@@ -2898,7 +2903,7 @@ globalThis.EMBEDDED_DATA = {
     "sites": {
       "la_lucha": {
         "site": "Rotonda de La Lucha",
-        "estimate_scale": 0.1,
+        "estimate_scale": 1,
         "samples": [
           {
             "file": "2026-11-24_1637_offpeak_conector_troncal.json",
@@ -2918,6 +2923,12 @@ globalThis.EMBEDDED_DATA = {
             ]
           },
           {
+            "file": "calle31_sur_entrada.json",
+            "measured": [
+              "conteo Calle 31 (sur) (17:30-17:45, 2026-11-24)"
+            ]
+          },
+          {
             "file": "ferrocarril_entrada_salida.json",
             "measured": [
               "salen por Av. del Ferrocarril (14:31-14:46)",
@@ -2932,9 +2943,9 @@ globalThis.EMBEDDED_DATA = {
             "bus": 1755
           },
           "calle31_sur": {
-            "motorcycle": 2070,
-            "car": 929,
-            "bus": 99
+            "motorcycle": 7574,
+            "car": 3880,
+            "bus": 204
           },
           "calle31_oriente": {
             "motorcycle": 30724,
@@ -2954,9 +2965,9 @@ globalThis.EMBEDDED_DATA = {
             "bus": "measured"
           },
           "calle31_sur": {
-            "motorcycle": "estimated",
-            "car": "estimated",
-            "bus": "estimated"
+            "motorcycle": "measured",
+            "car": "measured",
+            "bus": "measured"
           },
           "calle31_oriente": {
             "motorcycle": "measured",
@@ -2987,6 +2998,14 @@ globalThis.EMBEDDED_DATA = {
             "end": 52620
           },
           {
+            "approach": "calle31_sur",
+            "file": "calle31_sur_entrada.json",
+            "time": "17:30-17:45",
+            "date": "2026-11-24",
+            "start": 63000,
+            "end": 63900
+          },
+          {
             "approach": "ferrocarril",
             "file": "ferrocarril_entrada_salida.json",
             "time": "14:31-14:46",
@@ -2997,62 +3016,62 @@ globalThis.EMBEDDED_DATA = {
         ],
         "turning": {
           "ferrocarril": {
-            "ferrocarril": 0.02,
-            "troncal_cienaga": 0.45,
-            "calle31_sur": 0.2,
-            "calle31_oriente": 0.15,
-            "conector_troncal": 0.18
+            "ferrocarril": 0.013,
+            "troncal_cienaga": 0.189,
+            "calle31_sur": 0.084,
+            "calle31_oriente": 0.638,
+            "conector_troncal": 0.076
           },
           "calle31_sur": {
-            "ferrocarril": 0.45,
-            "troncal_cienaga": 0.08,
-            "calle31_sur": 0.02,
-            "calle31_oriente": 0.15,
-            "conector_troncal": 0.3
+            "ferrocarril": 0.308,
+            "troncal_cienaga": 0.029,
+            "calle31_sur": 0.007,
+            "calle31_oriente": 0.546,
+            "conector_troncal": 0.11
           },
           "calle31_oriente": {
-            "ferrocarril": 0.35,
-            "troncal_cienaga": 0.35,
-            "calle31_sur": 0.18,
-            "calle31_oriente": 0.02,
-            "conector_troncal": 0.1
+            "ferrocarril": 0.521,
+            "troncal_cienaga": 0.233,
+            "calle31_sur": 0.12,
+            "calle31_oriente": 0.061,
+            "conector_troncal": 0.066
           },
           "conector_troncal": {
             "ferrocarril": 0.488,
-            "troncal_cienaga": 0.256,
-            "calle31_sur": 0.171,
-            "calle31_oriente": 0.068,
-            "conector_troncal": 0.017
+            "troncal_cienaga": 0.128,
+            "calle31_sur": 0.085,
+            "calle31_oriente": 0.291,
+            "conector_troncal": 0.008
           }
         },
         "turning_sources": {
           "ferrocarril": {
-            "ferrocarril": "assumed",
-            "troncal_cienaga": "assumed",
-            "calle31_sur": "assumed",
-            "calle31_oriente": "assumed",
-            "conector_troncal": "assumed"
+            "ferrocarril": "fitted to exit counts",
+            "troncal_cienaga": "fitted to exit counts",
+            "calle31_sur": "fitted to exit counts",
+            "calle31_oriente": "fitted to exit counts",
+            "conector_troncal": "fitted to exit counts"
           },
           "calle31_sur": {
-            "ferrocarril": "assumed",
-            "troncal_cienaga": "assumed",
-            "calle31_sur": "assumed",
-            "calle31_oriente": "assumed",
-            "conector_troncal": "assumed"
+            "ferrocarril": "fitted to exit counts",
+            "troncal_cienaga": "fitted to exit counts",
+            "calle31_sur": "fitted to exit counts",
+            "calle31_oriente": "fitted to exit counts",
+            "conector_troncal": "fitted to exit counts"
           },
           "calle31_oriente": {
-            "ferrocarril": "assumed",
-            "troncal_cienaga": "assumed",
-            "calle31_sur": "assumed",
-            "calle31_oriente": "assumed",
-            "conector_troncal": "assumed"
+            "ferrocarril": "fitted to exit counts",
+            "troncal_cienaga": "fitted to exit counts",
+            "calle31_sur": "fitted to exit counts",
+            "calle31_oriente": "fitted to exit counts",
+            "conector_troncal": "fitted to exit counts"
           },
           "conector_troncal": {
             "ferrocarril": "measured",
-            "troncal_cienaga": "assumed",
-            "calle31_sur": "assumed",
-            "calle31_oriente": "assumed",
-            "conector_troncal": "assumed"
+            "troncal_cienaga": "fitted to exit counts",
+            "calle31_sur": "fitted to exit counts",
+            "calle31_oriente": "fitted to exit counts",
+            "conector_troncal": "fitted to exit counts"
           }
         },
         "speeds_ms": {
@@ -3206,11 +3225,11 @@ globalThis.EMBEDDED_DATA = {
           "Giros de Conector Troncal (nororiente): medido 49 % hacia Av. del Ferrocarril; el 51 % restante se reparte entre Salida a Troncal (Ciénaga), Calle 31 (sur), Calle 31 (oriente), Conector Troncal (nororiente) en las proporciones supuestas.",
           "Velocidad en las salidas: medida solo en Av. del Ferrocarril; las demás salidas usan ese mismo promedio.",
           "Velocidad en los accesos antes de la línea de entrada: no medida; se usa data/parameters.json (vehicles.*.max_speed_ms).",
+          "Giros ajustados para que salga lo contado por Calle 31 (oriente) y Av. del Ferrocarril; los giros medidos no cambian y el resto conserva las proporciones supuestas.",
           "Av. del Ferrocarril: 59264 vehículos al día, calculados con el conteo de 14:31-14:46 y el perfil de 24 horas.",
+          "Calle 31 (sur): 11658 vehículos al día, calculados con el conteo de 17:30-17:45 y el perfil de 24 horas.",
           "Calle 31 (oriente): 42174 vehículos al día, calculados con el conteo de 14:22-14:37 y el perfil de 24 horas.",
           "Conector Troncal (nororiente): 22474 vehículos al día, calculados con el conteo de 16:37-16:52 y el perfil de 24 horas.",
-          "Calle 31 (sur) (1 carril) estimado con el flujo por carril medido aquí.",
-          "Los accesos sin conteo se llevaron al 10 % del flujo por carril medido. Con más tráfico, a las 16:37-16:52 el anillo se llena y Av. del Ferrocarril, Calle 31 (oriente), Conector Troncal (nororiente) ya no alcanza a entrar lo que se contó en campo.",
           "Distribución a lo largo del día: data/daily-profile.json (tres picos, como el pico y placa de Santa Marta: 7:00–9:00, 11:30–14:00 y 17:00–20:00)."
         ],
         "problems": []
@@ -3221,24 +3240,24 @@ globalThis.EMBEDDED_DATA = {
         "samples": [],
         "daily": {
           "troncal_oriente": {
-            "motorcycle": 33948,
-            "car": 15228,
-            "bus": 1628
+            "motorcycle": 36149,
+            "car": 16408,
+            "bus": 1670
           },
           "via_alterna": {
-            "motorcycle": 16974,
-            "car": 7614,
-            "bus": 814
+            "motorcycle": 18075,
+            "car": 8204,
+            "bus": 835
           },
           "calle29": {
-            "motorcycle": 33948,
-            "car": 15228,
-            "bus": 1628
+            "motorcycle": 36149,
+            "car": 16408,
+            "bus": 1670
           },
           "troncal_occidente": {
-            "motorcycle": 33948,
-            "car": 15228,
-            "bus": 1628
+            "motorcycle": 36149,
+            "car": 16408,
+            "bus": 1670
           }
         },
         "daily_sources": {
@@ -3396,24 +3415,24 @@ globalThis.EMBEDDED_DATA = {
         "samples": [],
         "daily": {
           "troncal_mamatoco": {
-            "motorcycle": 33948,
-            "car": 15228,
-            "bus": 1628
+            "motorcycle": 36149,
+            "car": 16408,
+            "bus": 1670
           },
           "libertador": {
-            "motorcycle": 33948,
-            "car": 15228,
-            "bus": 1628
+            "motorcycle": 36149,
+            "car": 16408,
+            "bus": 1670
           },
           "troncal_lucha": {
-            "motorcycle": 33948,
-            "car": 15228,
-            "bus": 1628
+            "motorcycle": 36149,
+            "car": 16408,
+            "bus": 1670
           },
           "carrera35": {
-            "motorcycle": 16974,
-            "car": 7614,
-            "bus": 814
+            "motorcycle": 18075,
+            "car": 8204,
+            "bus": 835
           }
         },
         "daily_sources": {
@@ -3980,6 +3999,50 @@ globalThis.EMBEDDED_DATA = {
               "conector_troncal": null
             },
             "observed_blockages": []
+          }
+        },
+        {
+          "file": "calle31_sur_entrada.json",
+          "data": {
+            "site": "Rotonda de La Lucha",
+            "is_test_data": false,
+            "coordinates": [
+              11.217962,
+              -74.19022
+            ],
+            "profiles": {
+              "peak": {
+                "time": "17:30-17:45",
+                "date": "2026-11-24",
+                "approaches": {
+                  "ferrocarril": null,
+                  "calle31_sur": {
+                    "motorcycle": 139,
+                    "car": 69,
+                    "bus": 4
+                  },
+                  "calle31_oriente": null,
+                  "conector_troncal": null
+                }
+              },
+              "offpeak": {
+                "time": null,
+                "date": null,
+                "approaches": {
+                  "ferrocarril": null,
+                  "calle31_sur": null,
+                  "calle31_oriente": null,
+                  "conector_troncal": null
+                }
+              }
+            },
+            "turning": {
+              "ferrocarril": null,
+              "calle31_sur": null,
+              "calle31_oriente": null,
+              "conector_troncal": null
+            },
+            "observed_blockages": null
           }
         },
         {
