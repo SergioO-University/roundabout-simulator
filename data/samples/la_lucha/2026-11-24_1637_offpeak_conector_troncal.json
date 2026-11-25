@@ -1,0 +1,45 @@
+{
+  "site": "Rotonda de La Lucha",
+  "is_test_data": false,
+  "coordinates": [11.219148, -74.190142],
+  "profiles": {
+    "peak": {
+      "time": null,
+      "date": null,
+      "approaches": {
+        "ferrocarril": { "motorcycle": null, "car": null, "bus": null },
+        "calle31_sur": { "motorcycle": null, "car": null, "bus": null },
+        "calle31_oriente": { "motorcycle": null, "car": null, "bus": null },
+        "conector_troncal": { "motorcycle": null, "car": null, "bus": null }
+      }
+    },
+    "offpeak": {
+      "time": "16:37-16:52",
+      "date": "2026-11-24",
+      "approaches": {
+        "ferrocarril": { "motorcycle": null, "car": null, "bus": null },
+        "calle31_sur": { "motorcycle": null, "car": null, "bus": null },
+        "calle31_oriente": { "motorcycle": null, "car": null, "bus": null },
+        "conector_troncal": { "motorcycle": 163, "car": 140, "bus": 33 }
+      }
+    }
+  },
+  "turning": {
+    "ferrocarril": null,
+    "calle31_sur": null,
+    "calle31_oriente": null,
+    "conector_troncal": { "ferrocarril": 164, "troncal_cienaga": null, "calle31_sur": null, "calle31_oriente": null, "conector_troncal": null }
+  },
+  "observed_blockages": [],
+  "observed_speeds_kmh": {
+    "profile": "offpeak",
+    "ring": { "motorcycle": 16.9, "car": 14.7, "bus": 17.0, "all": 15.9 },
+    "exit_ferrocarril": { "motorcycle": 20.2, "car": 16.7, "bus": 18.2, "all": 18.8 }
+  },
+  "observed_entry_headway_s": {
+    "profile": "offpeak",
+    "approach": "conector_troncal",
+    "median": 2.4,
+    "queue_discharge_p15": 0.7
+  }
+}
