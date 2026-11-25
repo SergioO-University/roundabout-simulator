@@ -1,0 +1,32 @@
+{
+  "site": "Rotonda de La Lucha",
+  "is_test_data": false,
+  "coordinates": null,
+  "profiles": {
+    "peak": null,
+    "offpeak": {
+      "time": "14:22-14:37",
+      "date": "2026-11-24",
+      "approaches": {
+        "ferrocarril": { "motorcycle": null, "car": null, "bus": null },
+        "calle31_sur": { "motorcycle": null, "car": null, "bus": null },
+        "calle31_oriente": { "motorcycle": 377, "car": 149, "bus": 2 },
+        "conector_troncal": { "motorcycle": null, "car": null, "bus": null }
+      },
+      "exits": {
+        "ferrocarril": { "motorcycle": null, "car": null, "bus": null },
+        "troncal_cienaga": { "motorcycle": null, "car": null, "bus": null },
+        "calle31_sur": { "motorcycle": null, "car": null, "bus": null },
+        "calle31_oriente": { "motorcycle": 453, "car": 203, "bus": 15 },
+        "conector_troncal": { "motorcycle": null, "car": null, "bus": null }
+      }
+    }
+  },
+  "turning": {
+    "ferrocarril": null,
+    "calle31_sur": null,
+    "calle31_oriente": null,
+    "conector_troncal": null
+  },
+  "observed_blockages": []
+}
