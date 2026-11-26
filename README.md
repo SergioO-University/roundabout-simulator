@@ -34,7 +34,7 @@
 
 - **La pregunta:** en hora pico, ¿los agentes de tránsito que dan paso por turnos en La Lucha mejoran el flujo, o la rotonda funciona mejor sola? ¿Y un semáforo?
 - **Qué hicimos:** un simulador web en 2D de la rotonda real, calibrado con cuatro conteos de campo, que corre un día completo y compara tres formas de operarla con exactamente las mismas llegadas.
-- **Qué encontramos:** la rotonda en flujo libre atiende más vehículos y con menos espera que con semáforo o con agente. Los turnos de agente son la peor opción: atienden menos de la mitad.
+- **Qué encontramos:** la rotonda en flujo libre atiende más vehículos y con menos espera que con semáforo o con agente. Los turnos de agente son la peor opción: más espera y menos de la mitad de vehículos atendidos.
 
 ## Resultados
 
@@ -42,13 +42,13 @@ La Lucha, día completo, misma semilla (2026) y las mismas llegadas en los tres 
 
 | Modo | Espera promedio | Atendidos en el día | Se fueron por otra ruta |
 |---|---|---|---|
-| Actual | 650 s | 87.865 | 25.370 |
-| Semáforo | 691 s | 53.912 | 59.322 |
-| Agente | 879 s | 32.133 | 81.035 |
+| Actual | 434 s | 97.801 | 15.434 |
+| Semáforo | 535 s | 68.928 | 44.307 |
+| Agente | 669 s | 44.417 | 68.802 |
 
-- **El flujo libre (Actual) es mejor en todo**, y los turnos de agente son lo peor: atienden menos de la mitad de los vehículos. En la ventana de 14:22–14:37, la mejor calibrada, la espera es de 104 s en modo Actual, 479 s con semáforo y 641 s con agente.
+- **El flujo libre (Actual) es mejor en todo** y los turnos de agente son lo peor: atienden menos de la mitad de los vehículos. En la ventana de 14:22–14:37, la mejor calibrada, la espera es de 86 s en modo Actual, 331 s con semáforo y 415 s con agente.
 - **Los desvíos directos** sacan unos 22.300 vehículos al día sin entrar al anillo.
-- **Qué tan fiel es:** las dos tomas casi simultáneas (14:22–14:46) quedan dentro de ±3 % al entrar (Ferrocarril −3 %, Calle 31 oriente +1 %), y la salida por la Ferrocarril queda en −6 % y la de la Calle 31 (oriente) en −18 %. Las dos tomas de la tarde no se reproducen: a las 16:37 el Conector deja entrar 210 de 336 y a las 17:30 la Calle 31 (sur) 52 de 212. A esas horas el perfil público sube entre un 22 % y un 50 % el tráfico de la Ferrocarril y la Calle 31 (oriente), y ese flujo tapa las demás entradas. Para saber si el perfil exagera la tarde en este punto haría falta contar todos los accesos a la misma hora.
+- **Qué tan fiel es:** en las dos tomas casi simultáneas (14:22–14:46) entran por la Ferrocarril 740 de 733 (+1 %) y por la Calle 31 (oriente) 498 de 528 (−6 %), y salen por la Ferrocarril −3 % y por la Calle 31 (oriente) −4 %. En el Conector, el tiempo entre entradas da una mediana de 2,7 s (medido 2,4 s) y un percentil 15 de 0,7 s (igual al medido). Las dos tomas de la tarde quedan bajas: a las 16:37 el Conector deja entrar 257 de 336 y a las 17:30 la Calle 31 (sur) 160 de 212. A esas horas el perfil público sube entre un 22 % y un 50 % el tráfico de la Ferrocarril y la Calle 31 (oriente), y ese flujo tapa las demás entradas. Para saber si el perfil exagera la tarde en este punto haría falta contar todos los accesos a la misma hora.
 - **Semáforo y agente** usan tiempos fijos (verde 30 s / 20 s; turnos de 40 s), sin ajustar a la demanda del día.
 
 ## Cómo abrirlo
@@ -198,8 +198,8 @@ El formato de las muestras está en `data/samples/README.md`.
 ### Parámetros calibrados con las muestras
 
 - **Tiempo de seguimiento (`follow_up_s`):** 1,8 s para motos, 2,8 s para carros y 3,8 s para busetas. Es el tiempo mínimo que deja un conductor en fila después de que entra el de adelante, y se reduce para los conductores más agresivos. Con estos valores, la mediana simulada del tiempo entre entradas (2,4 s) es igual a la medida.
-- **Entrada en paralelo (`roundabout.parallel_motorcycle_entry` y `parallel_entry_delay_s`):** si en la línea hay una moto al lado de un carro, la moto entra entre 0,3 y 0,8 s después y circulan lado a lado hasta separarse. Con esto el percentil 15 simulado (0,7 s) es igual al medido.
-- **Elección de carril en accesos de 2 carriles (`roundabout.lane_choice`):** quien sale antes del 25 % de la vuelta va por la derecha, quien va más allá del 75 % por la izquierda, y el resto escoge el carril con menos fila. Con esto la Av. del Ferrocarril deja entrar lo contado (713 de 733).
+- **Entrada en paralelo (`roundabout.parallel_motorcycle_entry` y `parallel_entry_delay_s`):** si una moto espera al lado de un carro (en la misma fila de un acceso de 1 carril, o entre los dos carriles de un acceso de 2), entra entre 0,3 y 0,8 s después y circulan lado a lado hasta separarse. Con esto el percentil 15 del tiempo entre entradas del Conector (0,7 s) es igual al medido.
+- **Elección de carril en accesos de 2 carriles (`roundabout.lane_choice`):** quien sale antes del 25 % de la vuelta va por la derecha, quien va más allá del 75 % por la izquierda, y el resto escoge el carril con menos fila. Con esto la Av. del Ferrocarril deja entrar lo contado (740 de 733).
 
 ## Geometría real (OpenStreetMap)
 
@@ -310,7 +310,7 @@ muestra también "vehículos aún en cola al final".
 
 **Comprobación a mano:** perfil "Caso de prueba (3 vehículos)" + modo Semáforo, y luego
 "Exportar vehículos de la corrida actual". Con los datos actuales:
-(21,4 + 22,6 + 23,6) / 3 = 22,5 s, igual a lo que muestra el tablero. Si cambian los datos reales, el número cambia: corran `node tests/engine.test.js`, que imprime la tabla del caso.
+(21,6 + 22,9 + 23,8) / 3 = 22,8 s, igual a lo que muestra el tablero. Si cambian los datos reales, el número cambia: corran `node tests/engine.test.js`, que imprime la tabla del caso.
 
 ## Simplificaciones del modelo
 
@@ -319,8 +319,11 @@ muestra también "vehículos aún en cola al final".
   - cada vehículo sigue al de adelante en su carril;
   - quien entra al carril externo espera hueco solo en ese carril; quien va al interno, en los dos;
   - los vehículos del carril interno salen directo: el cruce con el carril externo al salir no se modela.
-- **Accesos de 2 carriles** (como la Av. del Ferrocarril): dos filas independientes. La derecha entra al carril externo y la izquierda al interno, y pueden entrar a la vez. Cada vehículo escoge fila según su salida y, si puede ir por cualquiera, la más corta (`roundabout.lane_choice`).
+- **Carriles de La Lucha** (revisados en campo): entradas de 2 carriles en la Av. del Ferrocarril, la Calle 31 (sur) y el Conector, y de 1 en la Calle 31 (oriente); salidas de 2 carriles hacia la Ferrocarril, la Troncal (Ciénaga) y la Calle 31 (oriente), y de 1 hacia la Calle 31 (sur) y el Conector; los dos desvíos son de 2 carriles.
+- **Accesos de 2 carriles:** dos filas independientes. La derecha entra al carril externo y la izquierda al interno, y pueden entrar a la vez. Cada vehículo escoge fila según su salida y, si puede ir por cualquiera, la más corta (`roundabout.lane_choice`). Las motos no hacen fila detrás de los carros: avanzan entre los dos carriles hasta la línea y entran casi junto con un carro de cualquiera de los dos carriles, o solas si hay hueco.
 - **Accesos de 1 carril:** una fila más un carril de filtrado para motos. Una moto puede entrar al lado de un carro, y en el anillo van lado a lado hasta separarse.
+- **Salidas de 2 carriles:** dos filas; quien viene por el carril externo del anillo toma el derecho y quien viene por el interno, el izquierdo (si el suyo está lleno, usa el otro).
+- **Línea de ceda el paso:** se ubica donde todo el ancho de la entrada queda fuera del anillo. En entradas que llegan casi en paralelo al anillo, como el Conector, queda más atrás.
 - Se modelan unos 130 m de cada entrada y 90 m de cada salida.
 - **Desvíos** (`bypasses` en `data/osm/sites.json`). En La Lucha hay dos vías que salen antes de la glorieta y nunca entran al anillo:
   - **Av. del Ferrocarril → Troncal (Ciénaga)** (OpenStreetMap, vía 153685974);
@@ -354,7 +357,7 @@ Revisa lo siguiente:
 
 Al final compara los tres modos en el día completo de cada glorieta (unos 40 s en total).
 
-Hoy fallan dos comprobaciones: el Conector a las 16:37 y la Calle 31 (sur) a las 17:30 no alcanzan a entrar lo que se contó. La razón está en "Resultados".
+Hoy fallan dos comprobaciones de la prueba de conteos, que exige ±10 %: el Conector a las 16:37 (−24 %) y la Calle 31 (sur) a las 17:30 (−25 %). La razón está en "Resultados".
 
 ## Posibles mejoras
 
