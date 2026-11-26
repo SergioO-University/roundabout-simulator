@@ -220,31 +220,31 @@ globalThis.EMBEDDED_DATA = {
             "id": "calle31_sur",
             "name": "Calle 31 (sur)",
             "entry": {
-              "lanes": 1,
+              "lanes": 2,
               "osm_ways": [
                 -680187454,
                 549555140
               ],
               "path": [
                 [
-                  -34.8,
-                  -163.9
+                  -33.3,
+                  -164.9
                 ],
                 [
-                  -30.4,
-                  -144
+                  -28.7,
+                  -144.4
                 ],
                 [
-                  -26.2,
-                  -129.3
+                  -24.5,
+                  -129.7
                 ],
                 [
-                  -23.5,
-                  -119
+                  -21.9,
+                  -119.6
                 ],
                 [
-                  -19,
-                  -111.4
+                  -17.5,
+                  -112.3
                 ],
                 [
                   22.3,
@@ -336,7 +336,7 @@ globalThis.EMBEDDED_DATA = {
               ]
             },
             "exit": {
-              "lanes": 1,
+              "lanes": 2,
               "osm_ways": [
                 549555141,
                 549555139
@@ -351,8 +351,8 @@ globalThis.EMBEDDED_DATA = {
                   -3.5
                 ],
                 [
-                  126.9,
-                  -0.5
+                  127,
+                  -1.1
                 ]
               ]
             },
@@ -362,19 +362,19 @@ globalThis.EMBEDDED_DATA = {
             "id": "conector_troncal",
             "name": "Conector Troncal (nororiente)",
             "entry": {
-              "lanes": 1,
+              "lanes": 2,
               "osm_ways": [
                 585190412,
                 549555144
               ],
               "path": [
                 [
-                  148.3,
-                  55.8
+                  148,
+                  57.5
                 ],
                 [
-                  101.3,
-                  47.6
+                  101,
+                  49.3
                 ],
                 [
                   74.1,
@@ -432,7 +432,7 @@ globalThis.EMBEDDED_DATA = {
             "name": "Desvío a Troncal (Ciénaga)",
             "from": "ferrocarril",
             "to": "troncal_cienaga",
-            "lanes": 1,
+            "lanes": 2,
             "osm_ways": [
               153685974
             ],
@@ -480,7 +480,7 @@ globalThis.EMBEDDED_DATA = {
             "name": "Desvío a Av. del Ferrocarril",
             "from": "conector_troncal",
             "to": "ferrocarril",
-            "lanes": 1,
+            "lanes": 2,
             "osm_ways": [
               549555145
             ],
@@ -3240,24 +3240,24 @@ globalThis.EMBEDDED_DATA = {
         "samples": [],
         "daily": {
           "troncal_oriente": {
-            "motorcycle": 36149,
-            "car": 16408,
-            "bus": 1670
+            "motorcycle": 25821,
+            "car": 11720,
+            "bus": 1193
           },
           "via_alterna": {
-            "motorcycle": 18075,
-            "car": 8204,
-            "bus": 835
+            "motorcycle": 12910,
+            "car": 5860,
+            "bus": 597
           },
           "calle29": {
-            "motorcycle": 36149,
-            "car": 16408,
-            "bus": 1670
+            "motorcycle": 25821,
+            "car": 11720,
+            "bus": 1193
           },
           "troncal_occidente": {
-            "motorcycle": 36149,
-            "car": 16408,
-            "bus": 1670
+            "motorcycle": 25821,
+            "car": 11720,
+            "bus": 1193
           }
         },
         "daily_sources": {
@@ -3415,24 +3415,24 @@ globalThis.EMBEDDED_DATA = {
         "samples": [],
         "daily": {
           "troncal_mamatoco": {
-            "motorcycle": 36149,
-            "car": 16408,
-            "bus": 1670
+            "motorcycle": 25821,
+            "car": 11720,
+            "bus": 1193
           },
           "libertador": {
-            "motorcycle": 36149,
-            "car": 16408,
-            "bus": 1670
+            "motorcycle": 25821,
+            "car": 11720,
+            "bus": 1193
           },
           "troncal_lucha": {
-            "motorcycle": 36149,
-            "car": 16408,
-            "bus": 1670
+            "motorcycle": 25821,
+            "car": 11720,
+            "bus": 1193
           },
           "carrera35": {
-            "motorcycle": 18075,
-            "car": 8204,
-            "bus": 835
+            "motorcycle": 12910,
+            "car": 5860,
+            "bus": 597
           }
         },
         "daily_sources": {
@@ -3632,7 +3632,7 @@ globalThis.EMBEDDED_DATA = {
               680187451,
               680187454
             ],
-            "entry_lanes": 1,
+            "entry_lanes": 2,
             "exit_lanes": 1,
             "exit_capacity_vph": null
           },
@@ -3648,7 +3648,7 @@ globalThis.EMBEDDED_DATA = {
               549555139
             ],
             "entry_lanes": 1,
-            "exit_lanes": 1,
+            "exit_lanes": 2,
             "exit_capacity_vph": null
           },
           {
@@ -3662,7 +3662,7 @@ globalThis.EMBEDDED_DATA = {
               549555143,
               -585190412
             ],
-            "entry_lanes": 1,
+            "entry_lanes": 2,
             "exit_lanes": 1,
             "exit_capacity_vph": null
           }
@@ -3680,7 +3680,7 @@ globalThis.EMBEDDED_DATA = {
             "ways": [
               153685974
             ],
-            "lanes": 1,
+            "lanes": 2,
             "note": "Carrera 15 / Av. del Ferrocarril splits before the roundabout: traffic to the Troncal (Ciénaga) takes this link and never enters the ring."
           },
           {
@@ -3691,7 +3691,7 @@ globalThis.EMBEDDED_DATA = {
             "ways": [
               549555145
             ],
-            "lanes": 1,
+            "lanes": 2,
             "note": "Before the roundabout the Conector Troncal (two-way stretch) has a link straight to Av. del Ferrocarril northbound: traffic from the Conector to the Ferrocarril never enters the ring."
           }
         ]

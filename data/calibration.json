@@ -340,24 +340,24 @@
       "samples": [],
       "daily": {
         "troncal_oriente": {
-          "motorcycle": 36149,
-          "car": 16408,
-          "bus": 1670
+          "motorcycle": 25821,
+          "car": 11720,
+          "bus": 1193
         },
         "via_alterna": {
-          "motorcycle": 18075,
-          "car": 8204,
-          "bus": 835
+          "motorcycle": 12910,
+          "car": 5860,
+          "bus": 597
         },
         "calle29": {
-          "motorcycle": 36149,
-          "car": 16408,
-          "bus": 1670
+          "motorcycle": 25821,
+          "car": 11720,
+          "bus": 1193
         },
         "troncal_occidente": {
-          "motorcycle": 36149,
-          "car": 16408,
-          "bus": 1670
+          "motorcycle": 25821,
+          "car": 11720,
+          "bus": 1193
         }
       },
       "daily_sources": {
@@ -515,24 +515,24 @@
       "samples": [],
       "daily": {
         "troncal_mamatoco": {
-          "motorcycle": 36149,
-          "car": 16408,
-          "bus": 1670
+          "motorcycle": 25821,
+          "car": 11720,
+          "bus": 1193
         },
         "libertador": {
-          "motorcycle": 36149,
-          "car": 16408,
-          "bus": 1670
+          "motorcycle": 25821,
+          "car": 11720,
+          "bus": 1193
         },
         "troncal_lucha": {
-          "motorcycle": 36149,
-          "car": 16408,
-          "bus": 1670
+          "motorcycle": 25821,
+          "car": 11720,
+          "bus": 1193
         },
         "carrera35": {
-          "motorcycle": 18075,
-          "car": 8204,
-          "bus": 835
+          "motorcycle": 12910,
+          "car": 5860,
+          "bus": 597
         }
       },
       "daily_sources": {
