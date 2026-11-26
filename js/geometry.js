@@ -174,12 +174,38 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       }
       if (a.entry) {
         res.entryPath = Sim.makePolyline(entryPts, false);
-        res.approachLength = Math.max(15, res.entryPath.length - lineOffset);
-        res.entryArc = projectOnPolyline(ring, entryPts[entryPts.length - 1]);
+        // Yield line: where the whole width of the entry is clear of the ring roadway. Entries that meet
+        // the ring at a shallow angle (like the Conector) need it farther back, or the vehicles waiting at
+        // the line would sit on top of the ones circulating.
+        const halfIn = (res.nIn * DW) / 2;
+        const clearAt = (s) =>
+          [-halfIn, 0, halfIn].every((lat) => {
+            const p = Sim.pointAt(res.entryPath, s, lat);
+            return closestOn(ring.pts, [p.x, p.y]).d >= ringWidth / 2 + 0.5;
+          });
+        let back = 0;
+        while (back < 30 && !clearAt(res.entryPath.length - lineOffset - back)) back += 0.5;
+        res.approachLength = Math.max(15, res.entryPath.length - lineOffset - back);
+        const linePt = Sim.pointAt(res.entryPath, res.approachLength, 0);
+        res.entryArc = projectOnPolyline(ring, [linePt.x, linePt.y]);
         res.stopArc = mod(res.entryArc - stopDistance, C);
-        // Logical lane drawn on the right-hand lane; filtering motorcycles ride on its left edge.
+        // One-lane approach: the queue on the lane and filtering motorcycles on its left edge.
+        // Two-lane approach: right line on the right lane and left line on the left lane, side by side.
         res.latLane = ((res.nIn - 1) * DW) / 2;
-        res.latFilter = res.latLane - DW * 0.55;
+        res.latFilter = res.nIn >= 2 ? res.latLane - DW : res.latLane - DW * 0.55;
+        // Drawing only: where the entry meets the ring at an angle, a lane drawn to one side reaches the
+        // ring roadway before the yield line. Each lane is drawn this many meters back so a waiting
+        // vehicle never sits on top of the vehicles circulating in front of it.
+        const clearOfRing = (lat) => {
+          const end = res.approachLength;
+          for (let back = 0; back < 15; back += 0.5) {
+            const p = Sim.pointAt(res.entryPath, end - back, lat);
+            if (closestOn(ring.pts, [p.x, p.y]).d >= ringWidth / 2 + 0.6) return back;
+          }
+          return 15;
+        };
+        res.setbackLane = clearOfRing(res.latLane);
+        res.setbackFilter = clearOfRing(res.latFilter);
       }
       if (a.exit) {
         res.exitPath = Sim.makePolyline(exitPts, false);
@@ -230,6 +256,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       ringWidth,
       ringOuterLat,
       lineOffset,
+      laneDrawWidth: DW,
       approaches,
       entryIds: entries.map((a) => a.id),
       exitIds: approaches.filter((a) => a.hasExit).map((a) => a.id),
@@ -240,7 +267,11 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       context: site.context || [],
       // Slip roads: from one approach straight to one exit, without entering the ring.
       bypasses: (site.bypasses || []).map((b) => {
-        const path = Sim.makePolyline(b.path, false);
+        // Drawn beside the entry it branches from (to its right), not on top of the vehicles queuing there.
+        const from = approaches.find((a) => a.id === b.from);
+        let pts = b.path;
+        if (from && from.entryPath) pts = separateFrom(b.path, from.entryPath.pts, ((b.lanes || 1) * DW) / 2 + (from.nIn * DW) / 2 + 0.3, 0);
+        const path = Sim.makePolyline(pts, false);
         return { id: b.id, name: b.name, from: b.from, to: b.to, lanes: b.lanes, path, length: path.length };
       }),
     };
@@ -284,16 +315,24 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
 
   // lateral (optional): override the ring lateral position (the renderer passes a smoothed one).
   Sim.vehiclePosition = function (geo, v, lateral) {
+    if (v.zone === 'split') {
+      // motorcycles riding between the two lanes of a two-lane approach
+      const a = geo.byId[v.approach];
+      const s = v.s - v.length / 2 - Math.max(a.setbackLane, a.setbackFilter);
+      return Sim.pointAt(a.entryPath, Math.max(0, s), (a.latLane + a.latFilter) / 2);
+    }
     if (v.zone === 'lane' || v.zone === 'filter') {
       const a = geo.byId[v.approach];
-      return Sim.pointAt(a.entryPath, v.s - v.length / 2, v.zone === 'filter' ? a.latFilter : a.latLane);
+      const filter = v.zone === 'filter';
+      const s = v.s - v.length / 2 - (filter ? a.setbackFilter : a.setbackLane) || 0;
+      return Sim.pointAt(a.entryPath, Math.max(0, s), filter ? a.latFilter : a.latLane);
     }
     if (v.zone === 'ring') {
       return Sim.pointAt(geo.ring, v.arc - v.length / 2, lateral ?? Sim.ringLane(geo, v));
     }
     if (v.zone === 'exit') {
       const a = geo.byId[v.destination];
-      return Sim.pointAt(a.exitPath, geo.lineOffset + v.s - v.length / 2, a.latExit);
+      return Sim.pointAt(a.exitPath, geo.lineOffset + v.s - v.length / 2, a.latExit - (v.exitLane || 0) * geo.laneDrawWidth);
     }
     if (v.zone === 'bypass') {
       const b = geo.bypasses.find((x) => x.id === v.bypass);

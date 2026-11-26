@@ -218,31 +218,31 @@
      "id": "calle31_sur",
      "name": "Calle 31 (sur)",
      "entry": {
-      "lanes": 1,
+      "lanes": 2,
       "osm_ways": [
        -680187454,
        549555140
       ],
       "path": [
        [
-        -34.8,
-        -163.9
+        -33.3,
+        -164.9
        ],
        [
-        -30.4,
-        -144
+        -28.7,
+        -144.4
        ],
        [
-        -26.2,
-        -129.3
+        -24.5,
+        -129.7
        ],
        [
-        -23.5,
-        -119
+        -21.9,
+        -119.6
        ],
        [
-        -19,
-        -111.4
+        -17.5,
+        -112.3
        ],
        [
         22.3,
@@ -334,7 +334,7 @@
       ]
      },
      "exit": {
-      "lanes": 1,
+      "lanes": 2,
       "osm_ways": [
        549555141,
        549555139
@@ -349,8 +349,8 @@
         -3.5
        ],
        [
-        126.9,
-        -0.5
+        127,
+        -1.1
        ]
       ]
      },
@@ -360,19 +360,19 @@
      "id": "conector_troncal",
      "name": "Conector Troncal (nororiente)",
      "entry": {
-      "lanes": 1,
+      "lanes": 2,
       "osm_ways": [
        585190412,
        549555144
       ],
       "path": [
        [
-        148.3,
-        55.8
+        148,
+        57.5
        ],
        [
-        101.3,
-        47.6
+        101,
+        49.3
        ],
        [
         74.1,
@@ -430,7 +430,7 @@
      "name": "Desvío a Troncal (Ciénaga)",
      "from": "ferrocarril",
      "to": "troncal_cienaga",
-     "lanes": 1,
+     "lanes": 2,
      "osm_ways": [
       153685974
      ],
@@ -478,7 +478,7 @@
      "name": "Desvío a Av. del Ferrocarril",
      "from": "conector_troncal",
      "to": "ferrocarril",
-     "lanes": 1,
+     "lanes": 2,
      "osm_ways": [
       549555145
      ],
