@@ -105,6 +105,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
     let queued = s.pending.length;
     for (const v of s.lane) if (v.state === 'queued') queued++;
     for (const v of s.filter) if (v.state === 'queued') queued++;
+    for (const v of s.split) if (v.state === 'queued') queued++;
     if (queued < 10) return false;
     const times = s.entryTimes || [];
     while (times.length && times[0] < e.t - RATE_WINDOW_S) times.shift();

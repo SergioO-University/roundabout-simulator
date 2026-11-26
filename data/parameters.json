@@ -44,7 +44,7 @@
       0.3,
       0.8
     ],
-    "parallel_entry_delay_note": "A motorcycle entering next to a car goes in this many seconds after it: [most aggressive, least aggressive]. Calibrated with the Conector headways (15th percentile 0.7 s).",
+    "parallel_entry_delay_note": "A motorcycle entering next to a car (beside it in the same line, or from the line of motorcycles between the two lanes of a two-lane approach) goes in this many seconds after it: [most aggressive, least aggressive]. Calibrated with the Conector headways (median 2.4 s, 15th percentile 0.7 s).",
     "lane_choice": {
       "right_only_below": 0.25,
       "left_only_above": 0.75

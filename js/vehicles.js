@@ -28,12 +28,27 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
     return move;
   }
 
+  // Exit lane a vehicle can take at the start of the exit 'destination', or -1 if every lane is full there.
+  // On a two-lane exit, a vehicle from the inner ring lane prefers the left exit lane (1) and one from the
+  // outer ring lane the right one (0); if its lane is full it takes the other.
+  Sim.freeExitLane = function (e, destination, v) {
+    const list = e.approaches[destination].exit;
+    const n = Math.max(1, e.geo.byId[destination].nOut || 1);
+    const roomIn = (lane) => {
+      for (let i = list.length - 1; i >= 0; i--) {
+        if ((list[i].exitLane || 0) === lane) return list[i].s - list[i].length >= v.props.minGap;
+      }
+      return true;
+    };
+    const preferred = Math.min(n - 1, v.ringLane || 0);
+    if (roomIn(preferred)) return preferred;
+    for (let lane = 0; lane < n; lane++) if (lane !== preferred && roomIn(lane)) return lane;
+    return -1;
+  };
+
   // Is there room for one more vehicle at the start of the exit 'destination'?
   Sim.exitStartIsFree = function (e, destination, v) {
-    const list = e.approaches[destination].exit;
-    const last = list[list.length - 1];
-    if (!last) return true;
-    return last.s - last.length >= v.props.minGap;
+    return Sim.freeExitLane(e, destination, v) >= 0;
   };
 
   // What an officer checks before waving a vehicle in: room on its exit, counting vehicles already heading there.
@@ -42,7 +57,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
     let used = 0;
     for (const x of e.approaches[v.destination].exit) used += x.length + x.props.minGap;
     for (const x of e.ring) if (x.destination === v.destination) used += x.length + x.props.minGap;
-    return used + v.length + v.props.minGap <= dest.exitLength;
+    return used + v.length + v.props.minGap <= dest.exitLength * Math.max(1, dest.nOut || 1);
   };
 
   // Ring lane a vehicle takes when it enters (two-lane rings): vehicles leaving soon keep to the outer lane (0),
@@ -101,21 +116,28 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
     const s = e.approaches[a.id];
     const list = s.exit;
     const cap = a.exitCapacity;
+    // Each vehicle follows the one ahead in its own exit lane (two-lane exits carry two lines side by side).
+    const lastIn = {};
     for (let i = 0; i < list.length; i++) {
       const v = list[i];
+      const lane = v.exitLane || 0;
+      const leader = lastIn[lane];
       let free;
-      if (i === 0) free = cap && e.t < s.nextDischarge ? a.exitLength - v.s : Infinity;
-      else {
-        const leader = list[i - 1];
-        free = leader.s - leader.length - v.s - v.props.minGap;
-      }
+      if (!leader) free = cap && e.t < s.nextDischarge ? a.exitLength - v.s : Infinity;
+      else free = leader.s - leader.length - v.s - v.props.minGap;
       v.s += advance(v, e.speeds.exits[a.id][v.type], free, e.dt);
+      lastIn[lane] = v;
     }
     // End of the exit: if the exit road has limited capacity (for example, congestion downstream),
     // vehicles leave one at a time every few seconds.
-    while (list.length && list[0].s >= a.exitLength - 0.05) {
+    for (let i = 0; i < list.length; ) {
+      const v = list[i];
+      if (v.s < a.exitLength - 0.05) {
+        i++;
+        continue;
+      }
       if (cap && e.t < s.nextDischarge) break;
-      const v = list.shift();
+      list.splice(i, 1);
       v.zone = 'gone';
       if (cap) {
         s.nextDischarge = e.t + (v.props.pce * 3600) / cap;
@@ -194,7 +216,9 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
 
       if (v.remaining <= 1e-6) {
         v.remaining = 0;
-        if (Sim.exitStartIsFree(e, v.destination, v)) {
+        const exitLane = Sim.freeExitLane(e, v.destination, v);
+        if (exitLane >= 0) {
+          v.exitLane = exitLane;
           v.zone = 'exit';
           v.s = 0;
           v.state = 'exited';
@@ -361,11 +385,32 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       const head = list[0];
       if (head && head.t_line === null && L - head.s <= 3) head.t_line = e.t;
       let allowed = false;
+      // Motorcycle side by side in the same lane: when a car or a motorcycle has just entered from this
+      // lane, a motorcycle waiting next to it (or the car next to the motorcycle) goes in a fraction of a
+      // second later instead of waiting the whole follow-up time, as measured in the field.
+      const pair = left ? s.pairLeft : s.pairRight;
+      const pairing =
+        e.params.roundabout.parallel_motorcycle_entry !== false &&
+        !!head &&
+        !!pair &&
+        e.t - pair.t <= 1.5 &&
+        (head.type === 'motorcycle' || pair.partner.type === 'motorcycle') &&
+        head.type !== 'bus' &&
+        pair.partner.type !== 'bus' &&
+        L - head.s <= pair.partner.length + head.props.minGap + 1;
+      const ignore = pairing ? pair.partner : enteredRight;
       if (head && L - head.s <= 30) {
         head.targetLane = left ? 1 : 0;
-        const last = left ? s.lastEntryLeft : s.lastEntryRight;
-        const followUpOk = e.t - (last ?? -Infinity) >= head.props.followUp * (1 - factor * (head.aggressiveness || 0)) - 1e-9;
-        allowed = followUpOk && e.control.allowsEntry(a.id, head, e) && Sim.canMerge(e, head, a, e.control.usesGapAcceptance, enteredRight, head.targetLane);
+        let followUpOk;
+        if (pairing) {
+          const moto = head.type === 'motorcycle' ? head : pair.partner;
+          const [dMin, dMax] = e.params.roundabout.parallel_entry_delay_s || [0.4, 1.0];
+          followUpOk = e.t - pair.t >= dMin + (dMax - dMin) * (1 - (moto.aggressiveness || 0)) - 1e-9;
+        } else {
+          const last = left ? s.lastEntryLeft : s.lastEntryRight;
+          followUpOk = e.t - (last ?? -Infinity) >= head.props.followUp * (1 - factor * (head.aggressiveness || 0)) - 1e-9;
+        }
+        allowed = followUpOk && e.control.allowsEntry(a.id, head, e) && Sim.canMerge(e, head, a, e.control.usesGapAcceptance, ignore, head.targetLane);
       }
       anyAllowed = anyAllowed || allowed;
       let entering = null;
@@ -383,7 +428,10 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
           free = L - v.s; // stops at the line
         }
         v.s += advance(v, vmax, free, e.dt);
-        if (i === 0 && allowed && v.s >= L - 0.01) {
+        if (i === 0 && allowed && pairing) {
+          v.s = L; // it was waiting beside its partner at the line
+          entering = v;
+        } else if (i === 0 && allowed && v.s >= L - 0.01) {
           if (e.control.allowsEntry(a.id, v, e) && Sim.canMerge(e, v, a, e.control.usesGapAcceptance, enteredRight, v.targetLane)) entering = v;
           else {
             v.s = Math.min(v.s, L);
@@ -397,10 +445,95 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
       }
       if (entering) {
         enterRing(e, a, entering);
-        if (left) s.lastEntryLeft = e.t;
-        else {
+        if (pairing && pair.partner.zone === 'ring' && (pair.partner.ringLane || 0) === entering.ringLane) {
+          // same ring lane: they ride side by side in it until one pulls ahead
+          entering.pair = pair.partner;
+          pair.partner.pair = entering;
+          const moto = entering.type === 'motorcycle' ? entering : pair.partner;
+          const car = moto === entering ? pair.partner : entering;
+          moto.ringLat = e.geo.drawW * 0.28;
+          car.ringLat = -e.geo.drawW * 0.1;
+        }
+        // A pair goes in together; the next vehicle can pair with it only if it did not just pair itself.
+        const next = pairing ? null : { partner: entering, t: e.t };
+        if (left) {
+          s.lastEntryLeft = e.t;
+          s.pairLeft = next;
+        } else {
           s.lastEntryRight = e.t;
+          s.pairRight = next;
           enteredRight = entering;
+        }
+      }
+    }
+    // Motorcycles between the two lanes: they ride past the stopped cars of either lane and wait at the
+    // line between them. The first one goes in next to a car that just entered from either lane (a
+    // fraction of a second later), or on its own when there is a gap.
+    const sp = s.split;
+    const head = sp[0];
+    let splitAllowed = false;
+    let partner = null;
+    if (head && L - head.s <= 30) {
+      if (head.t_line === null && L - head.s <= 3) head.t_line = e.t;
+      head.targetLane = Sim.chooseRingLane(e, { ...a, nIn: 1 }, head, false);
+      const [dMin, dMax] = e.params.roundabout.parallel_entry_delay_s || [0.4, 1.0];
+      const delay = dMin + (dMax - dMin) * (1 - (head.aggressiveness || 0));
+      for (const p of [s.pairRight, s.pairLeft]) {
+        if (p && p.partner.type !== 'bus' && e.t - p.t >= delay - 1e-9 && e.t - p.t <= 1.5 && !partner) partner = p.partner;
+      }
+      if (partner) head.targetLane = partner.ringLane || 0;
+      const followUpOk = partner || e.t - (s.lastEntrySplit ?? -Infinity) >= head.props.followUp * (1 - factor * (head.aggressiveness || 0)) - 1e-9;
+      splitAllowed =
+        e.params.roundabout.parallel_motorcycle_entry !== false &&
+        followUpOk &&
+        e.control.allowsEntry(a.id, head, e) &&
+        Sim.canMerge(e, head, a, e.control.usesGapAcceptance, partner, head.targetLane);
+    }
+    let splitEntering = null;
+    for (let i = 0; i < sp.length; i++) {
+      const v = sp[i];
+      let free;
+      let vmax = v.props.vmax;
+      if (i > 0) free = sp[i - 1].s - sp[i - 1].length - v.s - v.props.minGap;
+      else if (splitAllowed) {
+        free = Infinity;
+        vmax = Math.min(vmax, e.speeds.ring[v.type]);
+      } else free = L - v.s;
+      v.s += advance(v, vmax, free, e.dt);
+      if (i === 0 && splitAllowed && v.s >= L - 0.01) splitEntering = v;
+      if (v.state === 'approaching' && v.speed < 1.5) {
+        v.state = 'queued';
+        v.t_queue = e.t;
+      }
+    }
+    if (splitEntering) {
+      enterRing(e, a, splitEntering);
+      s.lastEntrySplit = e.t;
+      if (partner && partner.zone === 'ring' && (partner.ringLane || 0) === splitEntering.ringLane) {
+        splitEntering.pair = partner;
+        partner.pair = splitEntering;
+        splitEntering.ringLat = e.geo.drawW * 0.28;
+        partner.ringLat = -e.geo.drawW * 0.1;
+      }
+      if (s.pairRight && s.pairRight.partner === partner) s.pairRight = null;
+      if (s.pairLeft && s.pairLeft.partner === partner) s.pairLeft = null;
+    }
+    anyAllowed = anyAllowed || splitAllowed;
+    // A motorcycle behind an almost stopped car in either lane moves to the line between the lanes.
+    for (const list of [s.lane, s.filter]) {
+      for (let i = 1; i < list.length; i++) {
+        const v = list[i];
+        if (v.type !== 'motorcycle') continue;
+        const leader = list[i - 1];
+        if (leader.type === 'motorcycle') continue;
+        const space = leader.s - leader.length - v.s;
+        if (leader.speed < 2 && v.speed < 3 && space < 8 && fitsInFilter(sp, v)) {
+          list.splice(i, 1);
+          i--;
+          v.zone = 'split';
+          let k = 0;
+          while (k < sp.length && sp[k].s > v.s) k++;
+          sp.splice(k, 0, v);
         }
       }
     }
@@ -415,6 +548,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
   function enterRing(e, a, v) {
     const s = e.approaches[a.id];
     if (s.filter[0] === v) s.filter.shift();
+    else if (s.split[0] === v) s.split.shift();
     else s.lane.shift();
     const dest = e.geo.byId[v.destination];
     v.zone = 'ring';

@@ -104,6 +104,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
         let n = s.pending.length;
         for (const v of s.lane) if (v.state === 'queued') n++;
         for (const v of s.filter) if (v.state === 'queued') n++;
+        for (const v of s.split) if (v.state === 'queued') n++;
         m.queueNow[a.id] = n;
         if (n > m.queueMax[a.id]) m.queueMax[a.id] = n;
         if (n > h.queue_max) h.queue_max = n;

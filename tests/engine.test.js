@@ -24,7 +24,8 @@ function findOverlaps(e) {
   const bad = [];
   for (const a of e.geo.approaches) {
     const s = e.approaches[a.id];
-    for (const list of [s.lane, s.filter, s.exit]) {
+    const exitLanes = [0, 1, 2].map((k) => s.exit.filter((v) => (v.exitLane || 0) === k));
+    for (const list of [s.lane, s.filter, s.split, ...exitLanes]) {
       for (let i = 1; i < list.length; i++) {
         if (list[i - 1].s - list[i - 1].length < list[i].s - 1e-6) bad.push([list[i - 1].id, list[i].id]);
       }

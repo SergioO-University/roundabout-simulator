@@ -57,7 +57,7 @@ var Sim = globalThis.Sim || (globalThis.Sim = {});
 
       const approaches = {};
       for (const a of geo.approaches) {
-        approaches[a.id] = { lane: [], filter: [], pending: [], exit: [], nextDischarge: 0 };
+        approaches[a.id] = { lane: [], filter: [], split: [], pending: [], exit: [], nextDischarge: 0 };
       }
 
       const bypass = {};
