@@ -1,22 +1,55 @@
-# Simulador de cuellos de botella en glorietas · Santa Marta
+<p align="center">
+  <img src="docs/assets/unimagdalena-logo.png" alt="Universidad del Magdalena" width="180">
+</p>
 
-Reto No. 3 · Introducción a la Ingeniería de Sistemas 2026-2 · Universidad del Magdalena
+<h1 align="center">Simulador de cuellos de botella en glorietas</h1>
 
-**Punto estudiado:** Rotonda de La Lucha, con geometría real de OpenStreetMap y **cuatro conteos de campo** (24 de noviembre de 2026), uno por acceso.
-Mamatoco y La Piragua siguen en el simulador solo como referencia: no tienen conteos y su demanda es estimada.
+<p align="center">
+  <b>Rotonda de La Lucha · Santa Marta</b><br>
+  Reto No. 3 · Introducción a la Ingeniería de Sistemas 2026-2<br>
+  Programa de Ingeniería de Sistemas · Facultad de Ingeniería · Universidad del Magdalena
+</p>
 
-**Equipo:** _(nombre del equipo)_
-**Prototipo publicado:** <https://sergioo-university.github.io/roundabout-simulator/>
+<p align="center">
+  <a href="https://sergioo-university.github.io/roundabout-simulator/"><b>▶ Abrir el simulador</b></a> ·
+  <a href="docs/field-evidence.pdf">Anexo de campo</a> ·
+  <a href="docs/architecture-diagram.pdf">Diagrama de arquitectura</a> ·
+  <a href="docs/engineering-log.pdf">Bitácora</a>
+</p>
 
-**Integrantes:**
-- **Sergio Orejarena:** organización del proyecto, desarrollo con la IA (motor, lienzo, calibración, comparador, pruebas y documentos) y conteo del Conector Troncal.
-- **Jose Lopez:** conteo de la Av. del Ferrocarril (entradas y salidas).
-- **Juan Ariza:** conteo de la Calle 31 (oriente) (entradas y salidas).
-- **Oswel Moreno:** conteo de la Calle 31 (sur) en hora pico.
+---
 
-**IA usada:** Claude (Anthropic) para el código, la calibración y los documentos; Gemini (Google AI Studio) para pasar las planillas de conteo a `.json` con `data/field/instrucciones-para-ia.md`.
+## Equipo Trancón Samario
 
-**Documentos de la entrega** (en `docs/`): anexo de evidencia de campo, diagrama de arquitectura y bitácora de ingeniería.
+| Integrante | Aporte |
+|---|---|
+| Sergio Orejarena | Organización del proyecto; desarrollo con la IA (motor, lienzo, calibración, comparador, pruebas y documentos); conteo del Conector Troncal. |
+| Jose Lopez | Conteo de la Av. del Ferrocarril (entradas y salidas). |
+| Juan Ariza | Conteo de la Calle 31 (oriente) (entradas y salidas). |
+| Oswel Moreno | Conteo de la Calle 31 (sur) en hora pico. |
+
+**Docente:** Aquiles Cohen
+
+## En resumen
+
+- **La pregunta:** en hora pico, ¿los agentes de tránsito que dan paso por turnos en La Lucha mejoran el flujo, o la rotonda funciona mejor sola? ¿Y un semáforo?
+- **Qué hicimos:** un simulador web en 2D de la rotonda real, calibrado con cuatro conteos de campo, que corre un día completo y compara tres formas de operarla con exactamente las mismas llegadas.
+- **Qué encontramos:** la rotonda en flujo libre atiende más vehículos y con menos espera que con semáforo o con agente. Los turnos de agente son la peor opción: atienden menos de la mitad.
+
+## Resultados
+
+La Lucha, día completo, misma semilla (2026) y las mismas llegadas en los tres modos.
+
+| Modo | Espera promedio | Atendidos en el día | Se fueron por otra ruta |
+|---|---|---|---|
+| Actual | 650 s | 87.865 | 25.370 |
+| Semáforo | 691 s | 53.912 | 59.322 |
+| Agente | 879 s | 32.133 | 81.035 |
+
+- **El flujo libre (Actual) es mejor en todo**, y los turnos de agente son lo peor: atienden menos de la mitad de los vehículos. En la ventana de 14:22–14:37, la mejor calibrada, la espera es de 104 s en modo Actual, 479 s con semáforo y 641 s con agente.
+- **Los desvíos directos** sacan unos 22.300 vehículos al día sin entrar al anillo.
+- **Qué tan fiel es:** las dos tomas casi simultáneas (14:22–14:46) quedan dentro de ±3 % al entrar (Ferrocarril −3 %, Calle 31 oriente +1 %), y la salida por la Ferrocarril queda en −6 % y la de la Calle 31 (oriente) en −18 %. Las dos tomas de la tarde no se reproducen: a las 16:37 el Conector deja entrar 210 de 336 y a las 17:30 la Calle 31 (sur) 52 de 212. A esas horas el perfil público sube entre un 22 % y un 50 % el tráfico de la Ferrocarril y la Calle 31 (oriente), y ese flujo tapa las demás entradas. Para saber si el perfil exagera la tarde en este punto haría falta contar todos los accesos a la misma hora.
+- **Semáforo y agente** usan tiempos fijos (verde 30 s / 20 s; turnos de 40 s), sin ajustar a la demanda del día.
 
 ## Cómo abrirlo
 
@@ -29,32 +62,94 @@ Después de editar cualquier `.json`, regenerar la copia para el modo sin intern
 node tools/embed-data.js
 ```
 
-## Geometría real (OpenStreetMap)
+## Qué simula
 
-Las tres glorietas se dibujan y se simulan con su **forma real**, tomada de OpenStreetMap (© colaboradores de OpenStreetMap, licencia ODbL):
+Modela **una** glorieta con su geometría, durante un día completo, y la opera de tres formas, siempre con **las mismas llegadas**
+(misma semilla):
 
-| Punto | Nombre en OpenStreetMap | Brazos |
-|---|---|---|
-| La Lucha | Rotonda de La Lucha (la Troncal pasa por encima en puente) | Av. del Ferrocarril, Calle 31 (sur), Calle 31 (oriente), Conector Troncal (nororiente) y Salida a Troncal hacia Ciénaga (solo salida) |
-| Mamatoco | Rotonda Mamatoco | Troncal del Caribe (oriente y occidente), Vía Alterna al Puerto, Av. Calle 29 |
-| La Piragua | Rotonda José Benito Barrios | Troncal (hacia Mamatoco y hacia La Lucha), Av. del Libertador, Carrera 35 |
+| Modo | Qué representa |
+|---|---|
+| **Actual** (`current`) | Prelación: quien circula por el anillo tiene la vía y quien entra espera un hueco. Nadie revisa si su salida está libre, así que un vehículo puede quedar **atravesado** y bloquear a todos. |
+| **Semáforo** (`signal`) | Fases verde, amarillo y todo rojo, ajustables con controles deslizantes. Con verde en un acceso, el anillo se detiene antes de ese acceso. Nunca hay dos verdes en conflicto (accesos vecinos). |
+| **Agente** (`officer`, la "alternativa") | Turnos fijos de un agente de tránsito, un acceso a la vez, con tiempo de transición. Opcionalmente, el agente no deja entrar a quien no tiene espacio en su salida. |
 
-Los vehículos recorren las trayectorias reales de cada entrada y salida y la forma real del anillo. Algunos brazos son **solo de salida**.
+Las motos son más cortas, aceleran más, **filtran entre las filas** detenidas y pueden **entrar al anillo al lado de un carro**. Los carros y las busetas no filtran.
 
-Cómo se genera:
+En pantalla cada vehículo se dibuja con un ícono visto desde arriba. Las **luces de freno** se encienden cuando frena o está detenido, la **direccional naranja** parpadea cuando va a tomar su salida, y un **círculo rojo con "!"** marca a los vehículos atravesados que bloquean el anillo.
 
-1. `data/osm/*.json` tiene las vías descargadas de OpenStreetMap alrededor de cada glorieta.
-2. `data/osm/sites.json` dice qué vías forman la entrada y la salida de cada brazo, cuántos carriles tiene y su capacidad de salida. **Aquí se corrigen los nombres, carriles y capacidades con lo visto en campo.**
-3. `node tools/build-geometry.js` genera `data/geometry.json` (no editarlo a mano: se sobrescribe).
-4. `node tools/embed-data.js` actualiza la copia para usar sin internet.
+La interfaz y la documentación están en español. El código (archivos, variables, comentarios y claves de los JSON) está en inglés.
 
-⚠ La Piragua está en obra (intercambiador en construcción desde 2026); OpenStreetMap puede mostrar la forma anterior.
+## Un día completo
 
-**En pantalla:** la rueda del mouse (o pellizcar en el teléfono) hace zoom y arrastrar mueve la vista; "Encuadrar" vuelve a la vista inicial. En teléfonos el diseño pasa a una sola columna con scroll.
-Con internet se puede activar **Mapa de fondo** (teselas de CARTO / OpenStreetMap) para ver la glorieta sobre el mapa.
-Sin internet el simulador funciona igual, solo sin el mapa de fondo.
+La simulación recorre **las 24 horas** de un día entre semana:
+- **Reloj:** la barra de arriba muestra la hora del día. Debajo del mapa aparece la franja actual (por ejemplo "Hora pico de la tarde · pico y placa").
+- **Velocidades:** ×1 (tiempo real), ×10, ×60 (1 minuto por segundo), ×300 y ×1200 (el día completo en unos 72 s).
+- **Ir a una hora:** el selector **Ir a** o un clic en el gráfico del día. Se simulan antes los 30 minutos previos, sin contarlos, para que la glorieta no arranque vacía.
+- **Gráfico del día:**
+  - barras grises: demanda esperada por hora;
+  - barras de color: vehículos que ya llegaron;
+  - línea roja: espera promedio de cada hora;
+  - franjas naranjas: horas pico.
+- **Comparador:** compara dos o tres modos en el día completo o en una franja (pico de la mañana, del mediodía, de la tarde o valle), con las mismas llegadas. Ver "Comparar escenarios".
+- **Exportar:** el resumen por hora de la corrida actual (CSV).
 
-## Datos reales (muestras de campo)
+### Cómo se reparte la demanda en el día (`data/daily-profile.json`)
+
+Cada acceso tiene un total de **vehículos por día**. El perfil dice qué porcentaje del día pasa en cada hora, por tipo de vehículo:
+- **Uso:** con el perfil, un conteo de 15 minutos a cualquier hora se convierte en total diario.
+- **Reparto:** el total diario se reparte en los 96 bloques de 15 minutos del día. Dentro de cada hora el ritmo cambia de forma gradual, sin saltos en punto.
+- **Redondeo:** se acumula a lo largo del día, de modo que los bloques suman exactamente el total diario.
+
+El perfil no es un conteo de 24 horas en La Lucha, porque no encontramos uno público. Se armó con lo siguiente:
+- **Tres picos:** coinciden con las franjas del **pico y placa de Santa Marta** (7:00–9:00, 11:30–14:00 y 17:00–20:00). La Secretaría de Movilidad las fijó tras aforar la Av. del Libertador y la Av. del Ferrocarril ([El Informador](https://www.elinformador.com.co/index.php/distrito/314147-asi-funcionara-el-nuevo-pico-y-placa-para-carros-particulares-en-santa-marta)).
+- **Pico de la tarde (17:00–19:00):** es el más alto. En la Troncal (Mamatoco–Bonda), la congestión se reporta entre 5:30 y 8:00 p. m. ([El Informador](https://www.elinformador.com.co/index.php/general/365-tema-del-dia/320579-pasar-por-la-troncal-del-caribe-es-transitar-por-un-calvario)).
+- **Volumen:** en la Troncal del Caribe pasan más de 1.300 vehículos cada media hora ([El Espectador](https://www.elespectador.com/colombia/mas-regiones/nuevas-medidas-de-movilidad-en-santa-marta-asi-funcionara-el-pico-y-placa/)). Con el perfil, el Conector da unos 430 por cuarto de hora en el pico de la tarde, el mismo orden de magnitud.
+- **Picos de viajes en Colombia:** 6:00, 12:00 y 17:00 según la Encuesta de Movilidad de Bogotá 2023 ([Portafolio](https://www.portafolio.co/economia/regiones/en-transporte-publico-y-a-pie-asi-se-transportaron-los-bogotanos-en-2023-606118)).
+- **Diferencias por tipo:** las motos (63 % del parque nacional según el [RUNT](https://www.runt.gov.co/sites/default/files/documentos/Balance%20del%20Sector%20Tr%C3%A1nsito%20y%20Transporte%202025%20%281%29_0.pdf)) arrancan más temprano. Las busetas circulan más o menos de 5:00 a 22:00.
+- **Hora pico:** el 7,6 % del día, dentro del 7–10 % habitual en puntos urbanos (supuesto).
+
+**Si miden un día completo** (o varias horas seguidas), reemplacen los porcentajes de `hourly_share_pct`, con 24 valores por tipo que sumen 100.
+
+### Desvío por congestión
+
+Un conductor que llega y ve una fila que le tomaría más de 15 minutos (`simulation.divert_after_wait_s` en `data/parameters.json`) se va por otra ruta y no entra a la fila.
+- **Cálculo de la espera esperada:** vehículos en cola en ese acceso ÷ cuántos ha dejado entrar el acceso en los últimos 5 minutos.
+- **Dónde se ven:** en la tabla de accesos (entre paréntesis), en el comparador y en el CSV por hora.
+- **Por qué existe:** sin esto, cuando la demanda supera la capacidad la fila crece sin fin y a medianoche siguen miles de vehículos esperando. En la realidad la gente cambia de ruta. Con `null` nadie se desvía.
+
+## Comparar escenarios
+
+En la pestaña **Comparar escenarios** se eligen los modos (dos o tres) y la franja. El simulador corre cada modo sin dibujar, con las mismas llegadas, y abre una vista con gráficas:
+
+- **Tarjetas por métrica:** espera, vehículos que se fueron, que cruzaron, evacuación, cola máxima y anillo bloqueado. Cada modo trae ▲/▼ y el % de diferencia contra el primero (verde: mejor; rojo: peor).
+- **A lo largo del tiempo:** una línea por modo cada 15 minutos (espera, cola promedio, se fueron o evacuados), con las horas pico sombreadas. Al pasar el mouse se ven los valores de ese momento.
+- **Por acceso:** barras agrupadas de espera, se fueron o cola máxima. Muestran *dónde* está la diferencia.
+- **Mapa de escenarios (PCA):** cada punto es un bloque de 15 minutos de un modo, descrito por cinco métricas a la vez:
+  - espera;
+  - cola promedio;
+  - vehículos que se fueron;
+  - atendidos por cada vehículo que llegó;
+  - tiempo con el anillo bloqueado.
+
+  Cómo funciona:
+  - **Cálculo:** el análisis de componentes principales (`js/pca.js`) estandariza esas métricas y las proyecta en los dos ejes que conservan más variación.
+  - **Lectura:** las flechas dicen hacia dónde crece cada métrica, y el círculo grande es el promedio de cada modo. Si las nubes se separan, los modos se comportan distinto.
+  - **En palabras:** el texto de arriba del mapa explica qué significa cada eje y qué modo queda mejor ubicado.
+  - **Qué quedó por fuera:** la evacuación bruta. Mide sobre todo qué tan cargada está la hora, no qué tan bien responde el modo.
+- **Tabla completa** (plegada) y exportación a CSV o JSON.
+
+Colores fijos por modo: Actual azul, Semáforo naranja y Agente aqua. La paleta pasa el validador de daltonismo para gráficos de dispersión con tres series.
+
+## Datos de campo
+
+El 24 de noviembre de 2026 el equipo contó los cuatro accesos de La Lucha, uno por persona (detalle, croquis y videos en [`docs/field-evidence.pdf`](docs/field-evidence.pdf)):
+
+| Acceso | Hora | Entran | Salen | Tomó |
+|---|---|---|---|---|
+| Calle 31 (oriente) | 14:22–14:37 (valle) | 528 | 671 | Juan Ariza |
+| Av. del Ferrocarril | 14:31–14:46 (valle) | 733 | 463 | Jose Lopez |
+| Conector Troncal | 16:37–16:52 (valle) | 336 | — | Sergio Orejarena |
+| Calle 31 (sur) | 17:30–17:45 (pico) | 212 | — | Oswel Moreno |
 
 Cada toma de campo se guarda como un archivo en `data/samples/<glorieta>/` y no se edita.
 
@@ -106,98 +201,36 @@ El formato de las muestras está en `data/samples/README.md`.
 - **Entrada en paralelo (`roundabout.parallel_motorcycle_entry` y `parallel_entry_delay_s`):** si en la línea hay una moto al lado de un carro, la moto entra entre 0,3 y 0,8 s después y circulan lado a lado hasta separarse. Con esto el percentil 15 simulado (0,7 s) es igual al medido.
 - **Elección de carril en accesos de 2 carriles (`roundabout.lane_choice`):** quien sale antes del 25 % de la vuelta va por la derecha, quien va más allá del 75 % por la izquierda, y el resto escoge el carril con menos fila. Con esto la Av. del Ferrocarril deja entrar lo contado (713 de 733).
 
-## Un día completo
+## Geometría real (OpenStreetMap)
 
-La simulación recorre **las 24 horas** de un día entre semana:
-- **Reloj:** la barra de arriba muestra la hora del día. Debajo del mapa aparece la franja actual (por ejemplo "Hora pico de la tarde · pico y placa").
-- **Velocidades:** ×1 (tiempo real), ×10, ×60 (1 minuto por segundo), ×300 y ×1200 (el día completo en unos 72 s).
-- **Ir a una hora:** el selector **Ir a** o un clic en el gráfico del día. Se simulan antes los 30 minutos previos, sin contarlos, para que la glorieta no arranque vacía.
-- **Gráfico del día:**
-  - barras grises: demanda esperada por hora;
-  - barras de color: vehículos que ya llegaron;
-  - línea roja: espera promedio de cada hora;
-  - franjas naranjas: horas pico.
-- **Comparador:** compara dos o tres modos en el día completo o en una franja (pico de la mañana, del mediodía, de la tarde o valle), con las mismas llegadas. Ver "Comparar escenarios".
-- **Exportar:** el resumen por hora de la corrida actual (CSV).
+Las tres glorietas se dibujan y se simulan con su **forma real**, tomada de OpenStreetMap (© colaboradores de OpenStreetMap, licencia ODbL):
 
-### Cómo se reparte la demanda en el día (`data/daily-profile.json`)
+| Punto | Nombre en OpenStreetMap | Brazos |
+|---|---|---|
+| La Lucha | Rotonda de La Lucha (la Troncal pasa por encima en puente) | Av. del Ferrocarril, Calle 31 (sur), Calle 31 (oriente), Conector Troncal (nororiente) y Salida a Troncal hacia Ciénaga (solo salida) |
+| Mamatoco | Rotonda Mamatoco | Troncal del Caribe (oriente y occidente), Vía Alterna al Puerto, Av. Calle 29 |
+| La Piragua | Rotonda José Benito Barrios | Troncal (hacia Mamatoco y hacia La Lucha), Av. del Libertador, Carrera 35 |
 
-Cada acceso tiene un total de **vehículos por día**. El perfil dice qué porcentaje del día pasa en cada hora, por tipo de vehículo:
-- **Uso:** con el perfil, un conteo de 15 minutos a cualquier hora se convierte en total diario.
-- **Reparto:** el total diario se reparte en los 96 bloques de 15 minutos del día. Dentro de cada hora el ritmo cambia de forma gradual, sin saltos en punto.
-- **Redondeo:** se acumula a lo largo del día, de modo que los bloques suman exactamente el total diario.
+Los vehículos recorren las trayectorias reales de cada entrada y salida y la forma real del anillo. Algunos brazos son **solo de salida**.
 
-El perfil no es un conteo de 24 horas en La Lucha, porque no encontramos uno público. Se armó con lo siguiente:
-- **Tres picos:** coinciden con las franjas del **pico y placa de Santa Marta** (7:00–9:00, 11:30–14:00 y 17:00–20:00). La Secretaría de Movilidad las fijó tras aforar la Av. del Libertador y la Av. del Ferrocarril ([El Informador](https://www.elinformador.com.co/index.php/distrito/314147-asi-funcionara-el-nuevo-pico-y-placa-para-carros-particulares-en-santa-marta)).
-- **Pico de la tarde (17:00–19:00):** es el más alto. En la Troncal (Mamatoco–Bonda), la congestión se reporta entre 5:30 y 8:00 p. m. ([El Informador](https://www.elinformador.com.co/index.php/general/365-tema-del-dia/320579-pasar-por-la-troncal-del-caribe-es-transitar-por-un-calvario)).
-- **Volumen:** en la Troncal del Caribe pasan más de 1.300 vehículos cada media hora ([El Espectador](https://www.elespectador.com/colombia/mas-regiones/nuevas-medidas-de-movilidad-en-santa-marta-asi-funcionara-el-pico-y-placa/)). Con el perfil, el Conector da unos 430 por cuarto de hora en el pico de la tarde, el mismo orden de magnitud.
-- **Picos de viajes en Colombia:** 6:00, 12:00 y 17:00 según la Encuesta de Movilidad de Bogotá 2023 ([Portafolio](https://www.portafolio.co/economia/regiones/en-transporte-publico-y-a-pie-asi-se-transportaron-los-bogotanos-en-2023-606118)).
-- **Diferencias por tipo:** las motos (63 % del parque nacional según el [RUNT](https://www.runt.gov.co/sites/default/files/documentos/Balance%20del%20Sector%20Tr%C3%A1nsito%20y%20Transporte%202025%20%281%29_0.pdf)) arrancan más temprano. Las busetas circulan más o menos de 5:00 a 22:00.
-- **Hora pico:** el 7,6 % del día, dentro del 7–10 % habitual en puntos urbanos (supuesto).
+Cómo se genera:
 
-**Si miden un día completo** (o varias horas seguidas), reemplacen los porcentajes de `hourly_share_pct`, con 24 valores por tipo que sumen 100.
+1. `data/osm/*.json` tiene las vías descargadas de OpenStreetMap alrededor de cada glorieta.
+2. `data/osm/sites.json` dice qué vías forman la entrada y la salida de cada brazo, cuántos carriles tiene y su capacidad de salida. **Aquí se corrigen los nombres, carriles y capacidades con lo visto en campo.**
+3. `node tools/build-geometry.js` genera `data/geometry.json` (no editarlo a mano: se sobrescribe).
+4. `node tools/embed-data.js` actualiza la copia para usar sin internet.
 
-### Lo que muestra hoy (La Lucha, día completo, semilla 2026)
+⚠ La Piragua está en obra (intercambiador en construcción desde 2026); OpenStreetMap puede mostrar la forma anterior.
 
-| Modo | Espera promedio | Atendidos en el día | Se fueron por otra ruta |
-|---|---|---|---|
-| Actual | 650 s | 87.865 | 25.370 |
-| Semáforo | 691 s | 53.912 | 59.322 |
-| Agente | 879 s | 32.133 | 81.035 |
+**En pantalla:** la rueda del mouse (o pellizcar en el teléfono) hace zoom y arrastrar mueve la vista; "Encuadrar" vuelve a la vista inicial. En teléfonos el diseño pasa a una sola columna con scroll.
+Con internet se puede activar **Mapa de fondo** (teselas de CARTO / OpenStreetMap) para ver la glorieta sobre el mapa.
+Sin internet el simulador funciona igual, solo sin el mapa de fondo.
 
-- **El flujo libre (Actual) es mejor en todo**, y los turnos de agente son lo peor: atienden menos de la mitad de los vehículos. En la ventana de 14:22–14:37, la mejor calibrada, la espera es de 104 s en modo Actual, 479 s con semáforo y 641 s con agente.
-- **Los desvíos directos** sacan unos 22.300 vehículos al día sin entrar al anillo.
-- **Qué tan fiel es:** las dos tomas casi simultáneas (14:22–14:46) quedan dentro de ±3 % al entrar (Ferrocarril −3 %, Calle 31 oriente +1 %), y la salida por la Ferrocarril queda en −6 % y la de la Calle 31 (oriente) en −18 %. Las dos tomas de la tarde no se reproducen: a las 16:37 el Conector deja entrar 210 de 336 y a las 17:30 la Calle 31 (sur) 52 de 212. A esas horas el perfil público sube entre un 22 % y un 50 % el tráfico de la Ferrocarril y la Calle 31 (oriente), y ese flujo tapa las demás entradas. Para saber si el perfil exagera la tarde en este punto haría falta contar todos los accesos a la misma hora.
-- **Semáforo y agente** usan tiempos fijos (verde 30 s / 20 s; turnos de 40 s), sin ajustar a la demanda del día.
+## Cómo funciona
 
-### Desvío por congestión
+El motor de simulación solo maneja números y no conoce el lienzo; la pantalla lee su estado y lo pinta. El diagrama completo está en [`docs/architecture-diagram.pdf`](docs/architecture-diagram.pdf).
 
-Un conductor que llega y ve una fila que le tomaría más de 15 minutos (`simulation.divert_after_wait_s` en `data/parameters.json`) se va por otra ruta y no entra a la fila.
-- **Cálculo de la espera esperada:** vehículos en cola en ese acceso ÷ cuántos ha dejado entrar el acceso en los últimos 5 minutos.
-- **Dónde se ven:** en la tabla de accesos (entre paréntesis), en el comparador y en el CSV por hora.
-- **Por qué existe:** sin esto, cuando la demanda supera la capacidad la fila crece sin fin y a medianoche siguen miles de vehículos esperando. En la realidad la gente cambia de ruta. Con `null` nadie se desvía.
-
-## Comparar escenarios
-
-En la pestaña **Comparar escenarios** se eligen los modos (dos o tres) y la franja. El simulador corre cada modo sin dibujar, con las mismas llegadas, y abre una vista con gráficas:
-
-- **Tarjetas por métrica:** espera, vehículos que se fueron, que cruzaron, evacuación, cola máxima y anillo bloqueado. Cada modo trae ▲/▼ y el % de diferencia contra el primero (verde: mejor; rojo: peor).
-- **A lo largo del tiempo:** una línea por modo cada 15 minutos (espera, cola promedio, se fueron o evacuados), con las horas pico sombreadas. Al pasar el mouse se ven los valores de ese momento.
-- **Por acceso:** barras agrupadas de espera, se fueron o cola máxima. Muestran *dónde* está la diferencia.
-- **Mapa de escenarios (PCA):** cada punto es un bloque de 15 minutos de un modo, descrito por cinco métricas a la vez:
-  - espera;
-  - cola promedio;
-  - vehículos que se fueron;
-  - atendidos por cada vehículo que llegó;
-  - tiempo con el anillo bloqueado.
-
-  Cómo funciona:
-  - **Cálculo:** el análisis de componentes principales (`js/pca.js`) estandariza esas métricas y las proyecta en los dos ejes que conservan más variación.
-  - **Lectura:** las flechas dicen hacia dónde crece cada métrica, y el círculo grande es el promedio de cada modo. Si las nubes se separan, los modos se comportan distinto.
-  - **En palabras:** el texto de arriba del mapa explica qué significa cada eje y qué modo queda mejor ubicado.
-  - **Qué quedó por fuera:** la evacuación bruta. Mide sobre todo qué tan cargada está la hora, no qué tan bien responde el modo.
-- **Tabla completa** (plegada) y exportación a CSV o JSON.
-
-Colores fijos por modo: Actual azul, Semáforo naranja y Agente aqua. La paleta pasa el validador de daltonismo para gráficos de dispersión con tres series.
-
-## Qué hace
-
-Modela **una** glorieta con su geometría, durante un día completo, y la opera de tres formas, siempre con **las mismas llegadas**
-(misma semilla):
-
-| Modo | Qué representa |
-|---|---|
-| **Actual** (`current`) | Prelación: quien circula por el anillo tiene la vía y quien entra espera un hueco. Nadie revisa si su salida está libre, así que un vehículo puede quedar **atravesado** y bloquear a todos. |
-| **Semáforo** (`signal`) | Fases verde, amarillo y todo rojo, ajustables con controles deslizantes. Con verde en un acceso, el anillo se detiene antes de ese acceso. Nunca hay dos verdes en conflicto (accesos vecinos). |
-| **Agente** (`officer`, la "alternativa") | Turnos fijos de un agente de tránsito, un acceso a la vez, con tiempo de transición. Opcionalmente, el agente no deja entrar a quien no tiene espacio en su salida. |
-
-Las motos son más cortas, aceleran más, **filtran entre las filas** detenidas y pueden **entrar al anillo al lado de un carro**. Los carros y las busetas no filtran.
-
-En pantalla cada vehículo se dibuja con un ícono visto desde arriba. Las **luces de freno** se encienden cuando frena o está detenido, la **direccional naranja** parpadea cuando va a tomar su salida, y un **círculo rojo con "!"** marca a los vehículos atravesados que bloquean el anillo.
-
-La interfaz y la documentación están en español. El código (archivos, variables, comentarios y claves de los JSON) está en inglés.
-
-## Ciclo del motor
+### Ciclo del motor
 
 Cada 0,1 s simulados, siempre en el mismo orden:
 
@@ -207,7 +240,7 @@ Cada 0,1 s simulados, siempre en el mismo orden:
 4. **Métricas** (`metrics.js`): cruces, colas y esperas.
 5. **Dibujo** (`renderer.js`): pinta el estado en el lienzo. El motor no conoce el lienzo.
 
-## Archivos
+### Archivos
 
 El documento del reto sugiere nombres en español; esta tabla muestra a qué archivo corresponde cada uno.
 
@@ -248,7 +281,7 @@ El documento del reto sugiere nombres en español; esta tabla muestra a qué arc
 | `tools/build-geometry.js` | — | Genera `data/geometry.json` desde OpenStreetMap y `data/osm/sites.json`. |
 | `docs/` | `documentos/` | PDF de la entrega: anexo de campo, diagrama de arquitectura y bitácora. |
 
-### Equivalencias en los datos
+#### Equivalencias en los datos
 
 | En el código y los JSON | Significado |
 |---|---|
@@ -321,10 +354,23 @@ Revisa lo siguiente:
 
 Al final compara los tres modos en el día completo de cada glorieta (unos 40 s en total).
 
-Hoy fallan dos comprobaciones: el Conector a las 16:37 y la Calle 31 (sur) a las 17:30 no alcanzan a entrar lo que se contó. La razón está en "Lo que muestra hoy".
+Hoy fallan dos comprobaciones: el Conector a las 16:37 y la Calle 31 (sur) a las 17:30 no alcanzan a entrar lo que se contó. La razón está en "Resultados".
 
 ## Posibles mejoras
 
 - Contar los cuatro accesos a la misma hora, en valle y en pico, para comprobar el perfil del día en La Lucha.
 - Contar los giros de cada acceso (hoy solo está medido el del Conector).
 - Ajustar los verdes del semáforo y los turnos del agente a la demanda del día.
+
+## Uso de IA
+
+- **Claude (Anthropic):** motor, lienzo, calibración, comparador, pruebas y documentos.
+- **Gemini (Google AI Studio):** pasar las planillas de conteo a `.json` con las reglas de `data/field/instrucciones-para-ia.md`.
+
+Los fallos de la IA y cómo se corrigieron están en la [bitácora](docs/engineering-log.pdf).
+
+## Créditos
+
+- Geometría: © colaboradores de [OpenStreetMap](https://www.openstreetmap.org/copyright), licencia ODbL.
+- Mapa de fondo opcional: teselas de CARTO / OpenStreetMap.
+- Fuentes del perfil horario: ver "Cómo se reparte la demanda en el día".
